@@ -82,6 +82,20 @@ const AnalysisScreen = () => {
             style={styles.chartLabel}
           />
         </View>
+
+        {/* Income & Expense Summary */}
+        <View style={styles.summaryContainer}>
+            <View style={styles.summaryItem}>
+              <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+              <Text style={styles.summaryLabel}>Income</Text>
+              <Text style={styles.summaryValue}>$4,120.00</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <FontAwesome5 name="arrow-down" size={24} color="#FF5252" />
+              <Text style={styles.summaryLabel}>Expense</Text>
+              <Text style={styles.summaryValue}>$1,187.40</Text>
+            </View>
+          </View>
       </ScrollView>
 
       {/* Navigation Menu */}
@@ -182,6 +196,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 10,
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    margin: 15,
+    padding: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  summaryItem: {
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#7D7D7D',
+    marginTop: 5,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
   },
   navigation: {
     position: 'absolute',
