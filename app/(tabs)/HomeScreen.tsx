@@ -52,7 +52,7 @@ const HomeScreen = () => {
           <Text style={styles.welcomeText}>Hi, Welcome Back</Text>
           <Text style={styles.subText}>Good Morning</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/NotificationScreen')}>
+        <TouchableOpacity onPress={() => router.push('./NotificationScreen')}>
           <FontAwesome5 name="bell" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
