@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTabContext } from '../../contexts/TabContext';
 
 const BottomNavigation = () => {
-  const [activeTab, setActiveTab] = useState<'home' | 'chart' | 'transfer' | 'layers' | 'profile'>('home');
+  const { activeTab, setActiveTab } = useTabContext();
 
   const handleNavigation = (tab: 'home' | 'chart' | 'transfer' | 'layers' | 'profile', path: string) => {
     setActiveTab(tab);
@@ -18,7 +19,7 @@ const BottomNavigation = () => {
           <FontAwesome5 name="home" size={20} color={activeTab === 'home' ? '#000000' : '#7D7D7D'} />
         </View>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/Analysis' as any)}>
+      <TouchableOpacity onPress={() => handleNavigation('chart', '/Analysis')}>
         <View style={[styles.iconContainer, activeTab === 'chart' && styles.activeIconContainer]}>
           <FontAwesome5 name="chart-line" size={20} color={activeTab === 'chart' ? '#000000' : '#7D7D7D'} />
         </View>
@@ -61,8 +62,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeIconContainer: {
-    //borderColor: '#000000',
-    //borderWidth: 2,
+    backgroundColor: '#E8FFF7',
   },
 });
 
