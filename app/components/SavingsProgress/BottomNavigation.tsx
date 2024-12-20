@@ -18,7 +18,7 @@ const BottomNavigation = () => {
           <FontAwesome5 name="home" size={20} color={activeTab === 'home' ? '#000000' : '#7D7D7D'} />
         </View>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => handleNavigation('chart', './Analysis')}>
+      <TouchableOpacity onPress={() => router.push('/Analysis' as any)}>
         <View style={[styles.iconContainer, activeTab === 'chart' && styles.activeIconContainer]}>
           <FontAwesome5 name="chart-line" size={20} color={activeTab === 'chart' ? '#000000' : '#7D7D7D'} />
         </View>
