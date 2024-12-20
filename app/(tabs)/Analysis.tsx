@@ -9,10 +9,14 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
+import { LineChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
   
-const HomeScreen = () => {
+const AnalysisScreen = () => {
     const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'year'>('daily');
 
+    const screenWidth = Dimensions.get('window').width;
+    
     const chartData = {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         datasets: [
@@ -49,69 +53,51 @@ const HomeScreen = () => {
             </View>
           </View>
     
-            {/* Savings and Revenue */}
-            <View>
-              <SavingsProgress />
-              <View/>
-              <View>
-                <Text>Revenue Last Week</Text>
-                <Text>$4,000.00</Text>
-                <Text>Food Last Week</Text>
-                <Text>-$100.00</Text>
-              </View>
-          </View>
-    
           {/* Tabs */}
           <View>
-            {(['daily', 'weekly', 'monthly'] as Array<'daily' | 'weekly' | 'monthly'>).map((tab) => (
-              <TouchableOpacity
+            {['daily', 'weekly', 'monthly', 'year'].map((tab) => (
+            <TouchableOpacity
                 key={tab}
-                style={[
-                  styles.tabButton,
-                  activeTab === tab && styles.activeTab,
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
+                onPress={() => setActiveTab(tab as 'daily' | 'weekly' | 'monthly' | 'year')}
+            >
                 <Text>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
             ))}
-          </View>
+        </View>
     
-    
-          {/* Transactions */}
-          <FlatList
-            data={transactions}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.transactionItem}>
-                <View style={styles.transactionIcon}>
-                  <FontAwesome5
-                    name={item.icon}
-                    size={24}
-                    color={item.type === 'income' ? '#00D699' : '#FF5252'}
-                  />
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={styles.transactionName}>{item.name}</Text>
-                  <Text style={styles.transactionTime}>{item.time}</Text>
-                </View>
-                <View>
-                  <Text
-                    style={[
-                      styles.transactionAmount,
-                      item.type === 'income'
-                        ? styles.incomeAmount
-                        : styles.expenseAmount,
-                    ]}
-                  >
-                    {item.amount}
-                  </Text>
-                </View>
-              </View>
-            )}
-          />
+        { /* Chart */ }
+        <View>
+            <Text>Income & Expenses</Text>
+            <LineChart
+                data={chartData}
+                width={screenWidth - 30}
+                height={220}
+            chartConfig={{
+            backgroundGradientFrom: '#ffffff',
+            backgroundGradientTo: '#ffffff',
+            color: (opacity = 1) => `rgba(0, 121, 107, ${opacity})`, // Колір лінії
+            labelColor: () => `#7D7D7D`, 
+            }}
+            bezier 
+            />
+
+        </View>
+
+        {/* Income & Expense Summary */}
+        <View>
+            <View>
+                <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+                <Text>Income</Text>
+                <Text>$4,120.00</Text>
+            </View>
+            <View>
+                <FontAwesome5 name="arrow-down" size={24} color="#FF5252" />
+                <Text>Expense</Text>
+                <Text>$1,187.40</Text>
+            </View>
+        </View>
         </ScrollView>
     );
 };
