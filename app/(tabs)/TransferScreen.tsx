@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import { router } from 'expo-router';
 
 type Transaction = {
   id: string;
@@ -36,13 +37,9 @@ const TransferScreen = () => {
     <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Transaction</Text>
-        <TouchableOpacity>
-          <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+
       </View>
 
       <ScrollView style={styles.container}>
@@ -51,18 +48,19 @@ const TransferScreen = () => {
           <Text style={styles.cardTitle}>Total Balance</Text>
           <Text style={styles.cardAmount}>$7,783.00</Text>
         </View>
-
-        <View style={styles.balanceDetails}>
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.incomeAmount}>$7,783.00</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLabel}>Total Expense</Text>
-            <Text style={styles.expenseAmount}>-$1,187.40</Text>
-          </View>
+        <View style={styles.balanceSummaryContainer}>
+        <View style={styles.balanceSummaryCard}>
+          <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+          <Text style={styles.balanceSummaryTitle}>Income</Text>
+          <Text style={styles.balanceSummaryAmount}>$4,120.00</Text>
         </View>
+        <View style={styles.balanceSummaryCard}>
+          <FontAwesome5 name="arrow-down" size={24} color="#1A73E8" />
+          <Text style={styles.balanceSummaryTitle}>Expense</Text>
+          <Text style={styles.balanceSummaryAmountExpense}>$1,187.40</Text>
+        </View>
+      </View>
+
 
         {/* Transactions Section */}
         {transactionsData.map((section) => (
@@ -110,8 +108,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 15,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'center',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -142,27 +139,44 @@ const styles = StyleSheet.create({
     color: '#2A9D8F',
     marginTop: 5,
   },
-  balanceDetails: {
+  balanceSummaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+  },
+  balanceSummaryCard: {
+    flex: 1,
+    backgroundColor: '#E6FFF5',
     borderRadius: 15,
-    padding: 20,
-    elevation: 3,
+    alignItems: 'center',
+    padding: 15,
+    marginHorizontal: 5,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
+    elevation: 3,
   },
-  balanceItem: {
-    alignItems: 'center',
-    flex: 1,
+  balanceSummaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 10,
   },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#7D7D7D',
+  balanceSummaryAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#00D699',
+    marginTop: 5,
   },
+  balanceSummaryAmountExpense: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A73E8',
+    marginTop: 5,
+  },
+  
   incomeAmount: {
     fontSize: 20,
     fontWeight: 'bold',

@@ -101,3 +101,5 @@ const AnalysisScreen = () => {
         </ScrollView>
     );
 };
+
+export default AnalysisScreen;
