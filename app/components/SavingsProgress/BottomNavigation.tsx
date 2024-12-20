@@ -29,7 +29,7 @@ const BottomNavigation = () => {
           <FontAwesome5 name="exchange-alt" size={20} color={activeTab === 'transfer' ? '#000000' : '#7D7D7D'} />
         </View>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => handleNavigation('layers', '/LayersScreen')}>
+      <TouchableOpacity onPress={() => handleNavigation('layers', '/CategoriesScreen')}>
         <View style={[styles.iconContainer, activeTab === 'layers' && styles.activeIconContainer]}>
           <FontAwesome5 name="layer-group" size={20} color={activeTab === 'layers' ? '#000000' : '#7D7D7D'} />
         </View>

@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import { router } from 'expo-router';
 
 type Transaction = {
   id: string;
@@ -14,32 +13,61 @@ type Transaction = {
   type: string;
 };
 
-const transactionsData = [
+const allTransactions = [
   {
     month: 'April',
     transactions: [
       { id: '1', icon: 'money-bill-wave', name: 'Salary', time: '18:27 - April 30', category: 'Monthly', amount: '$4,000.00', type: 'income' },
       { id: '2', icon: 'shopping-basket', name: 'Groceries', time: '17:00 - April 24', category: 'Pantry', amount: '-$100.00', type: 'expense' },
       { id: '3', icon: 'home', name: 'Rent', time: '8:30 - April 15', category: 'Rent', amount: '-$674.40', type: 'expense' },
-      { id: '4', icon: 'car', name: 'Transport', time: '9:30 - April 08', category: 'Fuel', amount: '-$4.13', type: 'expense' },
     ],
   },
   {
     month: 'March',
     transactions: [
-      { id: '5', icon: 'utensils', name: 'Food', time: '19:30 - March 31', category: 'Dinner', amount: '-$70.40', type: 'expense' },
+      { id: '4', icon: 'utensils', name: 'Food', time: '19:30 - March 31', category: 'Dinner', amount: '-$70.40', type: 'expense' },
+    ],
+  },
+];
+
+const incomeTransactions = [
+  {
+    month: 'April',
+    transactions: [
+      { id: '1', icon: 'money-bill-wave', name: 'Salary', time: '18:27 - April 30', category: 'Monthly', amount: '$4,000.00', type: 'income' },
+    ],
+  },
+];
+
+const expenseTransactions = [
+  {
+    month: 'April',
+    transactions: [
+      { id: '2', icon: 'shopping-basket', name: 'Groceries', time: '17:00 - April 24', category: 'Pantry', amount: '-$100.00', type: 'expense' },
+      { id: '3', icon: 'home', name: 'Rent', time: '8:30 - April 15', category: 'Rent', amount: '-$674.40', type: 'expense' },
     ],
   },
 ];
 
 const TransferScreen = () => {
+  const [selectedTab, setSelectedTab] = useState<'income' | 'expense' | 'all'>('all');
+
+  const transactionsData =
+    selectedTab === 'income'
+      ? incomeTransactions
+      : selectedTab === 'expense'
+      ? expenseTransactions
+      : allTransactions;
+
+  const handleTabPress = (tab: 'income' | 'expense') => {
+    setSelectedTab((prevTab) => (prevTab === tab ? 'all' : tab));
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
-
         <Text style={styles.headerTitle}>Transaction</Text>
-
       </View>
 
       <ScrollView style={styles.container}>
@@ -48,19 +76,32 @@ const TransferScreen = () => {
           <Text style={styles.cardTitle}>Total Balance</Text>
           <Text style={styles.cardAmount}>$7,783.00</Text>
         </View>
-        <View style={styles.balanceSummaryContainer}>
-        <View style={styles.balanceSummaryCard}>
-          <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
-          <Text style={styles.balanceSummaryTitle}>Income</Text>
-          <Text style={styles.balanceSummaryAmount}>$4,120.00</Text>
-        </View>
-        <View style={styles.balanceSummaryCard}>
-          <FontAwesome5 name="arrow-down" size={24} color="#1A73E8" />
-          <Text style={styles.balanceSummaryTitle}>Expense</Text>
-          <Text style={styles.balanceSummaryAmountExpense}>$1,187.40</Text>
-        </View>
-      </View>
 
+        {/* Toggle Tabs */}
+        <View style={styles.balanceSummaryContainer}>
+          <TouchableOpacity
+            style={[
+              styles.balanceSummaryCard,
+              selectedTab === 'income' && styles.selectedCard,
+            ]}
+            onPress={() => handleTabPress('income')}
+          >
+            <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+            <Text style={styles.balanceSummaryTitle}>Income</Text>
+            <Text style={styles.balanceSummaryAmount}>$4,120.00</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.balanceSummaryCard,
+              selectedTab === 'expense' && styles.selectedCard,
+            ]}
+            onPress={() => handleTabPress('expense')}
+          >
+            <FontAwesome5 name="arrow-down" size={24} color="#1A73E8" />
+            <Text style={styles.balanceSummaryTitle}>Expense</Text>
+            <Text style={styles.balanceSummaryAmountExpense}>$1,187.40</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Transactions Section */}
         {transactionsData.map((section) => (
@@ -79,7 +120,9 @@ const TransferScreen = () => {
                   <Text
                     style={[
                       styles.transactionAmount,
-                      transaction.type === 'income' ? styles.incomeAmount : styles.expenseAmount,
+                      transaction.type === 'income'
+                        ? styles.incomeAmount
+                        : styles.expenseAmount,
                     ]}
                   >
                     {transaction.amount}
@@ -158,6 +201,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  selectedCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#00C9A7',
+  },
   balanceSummaryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -175,21 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1A73E8',
     marginTop: 5,
-  },
-  
-  incomeAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2A9D8F',
-  },
-  expenseAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#E63946',
-  },
-  divider: {
-    width: 1,
-    backgroundColor: '#E8E8E8',
   },
   monthTitle: {
     fontSize: 18,
@@ -233,6 +266,16 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  incomeAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2A9D8F',
+  },
+  expenseAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#E63946',
   },
 });
 
