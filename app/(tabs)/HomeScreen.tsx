@@ -10,6 +10,7 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
+import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
 
 // Типизация для транзакций
 type Transaction = {
@@ -45,104 +46,110 @@ const HomeScreen = () => {
   const transactions = transactionsData[activeTab];
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Hi, Welcome Back</Text>
-          <Text style={styles.subText}>Good Morning</Text>
-        </View>
-        <TouchableOpacity onPress={() => router.push('/NotificationScreen')}>
-          <FontAwesome5 name="bell" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Balance */}
-      <View style={styles.balanceContainer}>
-        <View style={styles.balanceItem}>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.incomeAmount}>$7,783.00</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.balanceItem}>
-          <Text style={styles.balanceLabel}>Total Expense</Text>
-          <Text style={styles.expenseAmount}>-$1,187.40</Text>
-        </View>
-      </View>
-
-        {/* Savings and Revenue */}
-        <View style={styles.savingsContainer}>
-          <SavingsProgress />
-          <View style={styles.dividerVertical} />
-          <View style={styles.revenueCont}>
-            <View>
-              <Text style={styles.revenueLabel}>Revenue Last Week</Text>
-              <Text style={styles.revenueAmount}>$4,000.00</Text>
-            </View>
-            <View>
-              <Text style={styles.foodLabel}>Money withdrawn last week</Text>
-              <Text style={styles.foodAmount}>-$100.00</Text>
-            </View>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>Hi, Welcome Back</Text>
+            <Text style={styles.subText}>Good Morning</Text>
           </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        {(['daily', 'weekly', 'monthly'] as Array<'daily' | 'weekly' | 'monthly'>).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTab,
-            ]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
+          <TouchableOpacity onPress={() => router.push('./NotificationScreen')}>
+            <FontAwesome5 name="bell" size={24} color="#fff" />
           </TouchableOpacity>
-        ))}
-      </View>
+        </View>
 
-
-      {/* Transactions */}
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.transactionItem}>
-            <View style={styles.transactionIcon}>
-              <FontAwesome5
-                name={item.icon}
-                size={24}
-                color={item.type === 'income' ? '#00D699' : '#FF5252'}
-              />
-            </View>
-            <View style={styles.transactionDetails}>
-              <Text style={styles.transactionName}>{item.name}</Text>
-              <Text style={styles.transactionTime}>{item.time}</Text>
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.transactionAmount,
-                  item.type === 'income'
-                    ? styles.incomeAmount
-                    : styles.expenseAmount,
-                ]}
-              >
-                {item.amount}
-              </Text>
-            </View>
+        {/* Balance */}
+        <View style={styles.balanceContainer}>
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.incomeAmount}>$7,783.00</Text>
           </View>
-        )}
-      />
-    </ScrollView>
+          <View style={styles.divider} />
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLabel}>Total Expense</Text>
+            <Text style={styles.expenseAmount}>-$1,187.40</Text>
+          </View>
+        </View>
+
+          {/* Savings and Revenue */}
+          <View style={styles.savingsContainer}>
+            <SavingsProgress />
+            <View style={styles.dividerVertical} />
+            <View style={styles.revenueCont}>
+              <View>
+                <Text style={styles.revenueLabel}>Revenue Last Week</Text>
+                <Text style={styles.revenueAmount}>$4,000.00</Text>
+              </View>
+              <View>
+                <Text style={styles.foodLabel}>Money withdrawn last week</Text>
+                <Text style={styles.foodAmount}>-$100.00</Text>
+              </View>
+            </View>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          {(['daily', 'weekly', 'monthly'] as Array<'daily' | 'weekly' | 'monthly'>).map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tabButton,
+                activeTab === tab && styles.activeTab,
+              ]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+
+        {/* Transactions */}
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.transactionItem}>
+              <View style={styles.transactionIcon}>
+                <FontAwesome5
+                  name={item.icon}
+                  size={24}
+                  color={item.type === 'income' ? '#00D699' : '#FF5252'}
+                />
+              </View>
+              <View style={styles.transactionDetails}>
+                <Text style={styles.transactionName}>{item.name}</Text>
+                <Text style={styles.transactionTime}>{item.time}</Text>
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    item.type === 'income'
+                      ? styles.incomeAmount
+                      : styles.expenseAmount,
+                  ]}
+                >
+                  {item.amount}
+                </Text>
+              </View>
+            </View>
+          )}
+        />
+      </ScrollView>
+      {/* Навигационная панель */}
+      <BottomNavigation />
+    </View>
   );
 };
 
+
 export const styles = StyleSheet.create({
   container: {
+    height: '100%',
     flex: 1,
     backgroundColor: '#E6FFF5',
   },
@@ -304,6 +311,22 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#E63946',
+  },
+
+  navContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#E8FFF7',
+    height: 70,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 10,
+  },
+  activeIcon: {
+    backgroundColor: '#00C9A7',
+    padding: 10,
+    borderRadius: 30,
   },
 });
 
