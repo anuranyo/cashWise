@@ -1,31 +1,45 @@
-import { StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { useRouter } from 'expo-router';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+const SplashScreen = () => {
+  const router = useRouter();
 
-export default function TabOneScreen() {
+  useEffect(() => {
+    setTimeout(() => {
+      router.push('./auth'); // Переход на экран авторизации
+    }, 3000);
+  }, [router]);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+      {/* Логотип */}
+      <Image source={require('../../assets/images/logo.png')} style={styles.logo} />
+      {/* Текст */}
+      <Text style={styles.text}>CashWise</Text>
+      {/* Индикатор загрузки */}
+      <ActivityIndicator size="large" color="#fff" />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#00D699',
   },
-  title: {
-    fontSize: 20,
+  logo: {
+    width: 100, // Ширина изображения
+    height: 100, // Высота изображения
+    marginBottom: 20, // Отступ от текста
+  },
+  text: {
+    fontSize: 32,
+    color: '#fff',
     fontWeight: 'bold',
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
 });
+
+export default SplashScreen;
