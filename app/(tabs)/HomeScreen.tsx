@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
 
 // Типизация для транзакций
 type Transaction = {
@@ -68,19 +69,16 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {/* Savings and Revenue */}
-      <View style={styles.savingsContainer}>
-        <View style={styles.savingsItem}>
-          <FontAwesome5 name="car" size={30} color="#00D699" />
-          <Text style={styles.savingsText}>Savings On Goals</Text>
-        </View>
-        <View style={styles.dividerVertical} />
-        <View>
-          <Text style={styles.revenueLabel}>Revenue Last Week</Text>
-          <Text style={styles.revenueAmount}>$4,000.00</Text>
-          <Text style={styles.foodLabel}>Food Last Week</Text>
-          <Text style={styles.foodAmount}>-$100.00</Text>
-        </View>
+        {/* Savings and Revenue */}
+        <View style={styles.savingsContainer}>
+          <SavingsProgress />
+          <View style={styles.dividerVertical} />
+          <View>
+            <Text style={styles.revenueLabel}>Revenue Last Week</Text>
+            <Text style={styles.revenueAmount}>$4,000.00</Text>
+            <Text style={styles.foodLabel}>Food Last Week</Text>
+            <Text style={styles.foodAmount}>-$100.00</Text>
+          </View>
       </View>
 
       {/* Tabs */}
@@ -92,7 +90,7 @@ const HomeScreen = () => {
               styles.tabButton,
               activeTab === tab && styles.activeTab,
             ]}
-            onPress={() => setActiveTab(tab)} // Теперь TypeScript понимает, что tab подходит для setActiveTab
+            onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
