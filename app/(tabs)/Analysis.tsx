@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { LineChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
 
@@ -16,15 +16,30 @@ const AnalysisScreen = () => {
 
   const screenWidth = Dimensions.get('window').width;
 
-  const chartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        data: [4000, 5000, 7000, 8000, 6000, 2000, 9000],
-        color: () => `#00C9A7`,
-      },
-    ],
+  const dataSets = {
+    daily: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      income: [4000, 7000, 5000, 10000, 6000, 2000, 8000],
+      expense: [2000, 4000, 3000, 6000, 5000, 1000, 7000],
+    },
+    weekly: {
+      labels: ['1st Week', '2nd Week', '3rd Week', '4th Week'],
+      income: [11000, 14000, 10000, 12000],
+      expense: [8000, 20000, 9000, 15000],
+    },
+    monthly: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      income: [47000, 52000, 60000, 49000, 45000, 43000],
+      expense: [32000, 40000, 35000, 37000, 30000, 35000],
+    },
+    year: {
+      labels: ['2018', '2019', '2020', '2021', '2022'],
+      income: [400000, 450000, 430000, 470000, 500000],
+      expense: [250000, 280000, 300000, 270000, 300000],
+    },
   };
+
+  const currentData = dataSets[activeTab];
 
   return (
     <View style={styles.container}>
@@ -67,19 +82,40 @@ const AnalysisScreen = () => {
 
         {/* Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartLabel}>Income & Expenses</Text>
-          <LineChart
-            data={chartData}
-            width={screenWidth - 30}
-            height={220}
-            chartConfig={{
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              color: (opacity = 1) => `rgba(0, 121, 107, ${opacity})`,
-              labelColor: () => `#7D7D7D`,
+          <Text style={styles.chartTitle}>Income & Expenses</Text>
+          <BarChart
+            data={{
+              labels: currentData.labels,
+              datasets: [
+                { data: currentData.income, color: () => `rgba(34, 193, 195, 1)` },
+                { data: currentData.expense, color: () => `rgba(255, 82, 82, 1)` },
+              ],
             }}
-            bezier
-            style={styles.chartLabel}
+            width={Dimensions.get('window').width - 60} 
+            height={220} 
+            yAxisLabel="$" 
+            yAxisSuffix="k" 
+            chartConfig={{
+              backgroundGradientFrom: '#E6FFF5',
+              backgroundGradientTo: '#E6FFF5',
+              decimalPlaces: 0, 
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, 
+              labelColor: () => `#7D7D7D`, 
+              propsForBackgroundLines: {
+                strokeWidth: 1,
+                strokeDasharray: '5,5',
+                stroke: '#E8E8E8',
+              },
+              propsForLabels: {
+                fontSize: 12, 
+                fill: '#7D7D7D', 
+              },
+            }}
+            style={{
+              marginVertical: 10,
+              borderRadius: 10,
+            }}
+            fromZero 
           />
         </View>
 
@@ -88,12 +124,16 @@ const AnalysisScreen = () => {
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Income</Text>
-              <Text style={styles.summaryValue}>$4,120.00</Text>
+              <Text style={styles.summaryValue}>
+                ${currentData.income.reduce((sum, val) => sum + val, 0).toLocaleString()}
+              </Text>
             </View>
             <View style={styles.summaryItem}>
-              <FontAwesome5 name="arrow-down" size={24} color="#FF5252" />
+              <FontAwesome5 name="arrow-" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Expense</Text>
-              <Text style={styles.summaryValue}>$1,187.40</Text>
+              <Text style={styles.summaryValue}>
+                ${currentData.expense.reduce((sum, val) => sum + val, 0).toLocaleString()}
+              </Text>
             </View>
           </View>
       </ScrollView>
@@ -181,17 +221,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chartContainer: {
-    marginHorizontal: 15,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
+    marginHorizontal: 15, 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 15,
+    padding: 15, 
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
   },
-  chartLabel: {
+  chartTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
