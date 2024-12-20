@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
 
 // Типизация для транзакций
@@ -39,7 +40,7 @@ const transactionsData: Record<'daily' | 'weekly' | 'monthly', Transaction[]> = 
 
 const HomeScreen = () => {
   // Явная типизация для activeTab
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   const transactions = transactionsData[activeTab];
 
@@ -51,7 +52,7 @@ const HomeScreen = () => {
           <Text style={styles.welcomeText}>Hi, Welcome Back</Text>
           <Text style={styles.subText}>Good Morning</Text>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/NotificationScreen')}>
           <FontAwesome5 name="bell" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -73,11 +74,15 @@ const HomeScreen = () => {
         <View style={styles.savingsContainer}>
           <SavingsProgress />
           <View style={styles.dividerVertical} />
-          <View>
-            <Text style={styles.revenueLabel}>Revenue Last Week</Text>
-            <Text style={styles.revenueAmount}>$4,000.00</Text>
-            <Text style={styles.foodLabel}>Food Last Week</Text>
-            <Text style={styles.foodAmount}>-$100.00</Text>
+          <View style={styles.revenueCont}>
+            <View>
+              <Text style={styles.revenueLabel}>Revenue Last Week</Text>
+              <Text style={styles.revenueAmount}>$4,000.00</Text>
+            </View>
+            <View>
+              <Text style={styles.foodLabel}>Money withdrawn last week</Text>
+              <Text style={styles.foodAmount}>-$100.00</Text>
+            </View>
           </View>
       </View>
 
@@ -212,6 +217,9 @@ export const styles = StyleSheet.create({
     width: 1,
     backgroundColor: '#E8E8E8',
     height: '100%',
+  },
+  revenueCont: {
+      justifyContent: 'center',
   },
   revenueLabel: {
     fontSize: 14,

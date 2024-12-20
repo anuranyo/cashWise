@@ -4,7 +4,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 const SavingsProgress = () => {
-  const progressValue = 75; // Укажите процент выполнения (например, 75%)
+  const progressValue = 10; // percentage of progress bar
 
   return (
     <View style={styles.progressContainer}>
