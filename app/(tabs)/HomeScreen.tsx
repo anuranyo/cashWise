@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,37 +9,39 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 
-const transactions = [
-  {
-    id: '1',
-    icon: 'money-bill-wave',
-    name: 'Salary',
-    time: '18:27 - April 30',
-    category: 'Monthly',
-    amount: '$4,000.00',
-    type: 'income',
-  },
-  {
-    id: '2',
-    icon: 'shopping-basket',
-    name: 'Groceries',
-    time: '17:00 - April 24',
-    category: 'Pantry',
-    amount: '-$100.00',
-    type: 'expense',
-  },
-  {
-    id: '3',
-    icon: 'home',
-    name: 'Rent',
-    time: '8:30 - April 15',
-    category: 'Rent',
-    amount: '-$674.40',
-    type: 'expense',
-  },
-];
+// Типизация для транзакций
+type Transaction = {
+  id: string;
+  icon: string;
+  name: string;
+  time: string;
+  category: string;
+  amount: string;
+  type: string;
+};
+
+// Типизация объекта данных транзакций
+const transactionsData: Record<'daily' | 'weekly' | 'monthly', Transaction[]> = {
+  daily: [
+    { id: '1', icon: 'coffee', name: 'Coffee', time: '08:30 - Today', category: 'Daily', amount: '-$5.00', type: 'expense' },
+    { id: '2', icon: 'bus', name: 'Bus Ticket', time: '09:15 - Today', category: 'Daily', amount: '-$2.50', type: 'expense' },
+  ],
+  weekly: [
+    { id: '3', icon: 'shopping-cart', name: 'Groceries', time: '17:00 - Apr 24', category: 'Weekly', amount: '-$100.00', type: 'expense' },
+    { id: '4', icon: 'utensils', name: 'Dinner', time: '19:00 - Apr 26', category: 'Weekly', amount: '-$50.00', type: 'expense' },
+  ],
+  monthly: [
+    { id: '5', icon: 'money-bill-wave', name: 'Salary', time: '18:27 - Apr 30', category: 'Monthly', amount: '$4,000.00', type: 'income' },
+    { id: '6', icon: 'home', name: 'Rent', time: '08:30 - Apr 15', category: 'Monthly', amount: '-$674.40', type: 'expense' },
+  ],
+};
 
 const HomeScreen = () => {
+  // Явная типизация для activeTab
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+
+  const transactions = transactionsData[activeTab];
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -83,16 +85,22 @@ const HomeScreen = () => {
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity style={styles.tabButton}>
-          <Text style={styles.tabText}>Daily</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tabButton}>
-          <Text style={styles.tabText}>Weekly</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabButton, styles.activeTab]}>
-          <Text style={styles.activeTabText}>Monthly</Text>
-        </TouchableOpacity>
+        {(['daily', 'weekly', 'monthly'] as Array<'daily' | 'weekly' | 'monthly'>).map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[
+              styles.tabButton,
+              activeTab === tab && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab(tab)} // Теперь TypeScript понимает, что tab подходит для setActiveTab
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+
 
       {/* Transactions */}
       <FlatList
@@ -130,10 +138,8 @@ const HomeScreen = () => {
   );
 };
 
-
 export const styles = StyleSheet.create({
   container: {
-    height: 100,
     flex: 1,
     backgroundColor: '#E6FFF5',
   },
@@ -176,16 +182,6 @@ export const styles = StyleSheet.create({
   balanceLabel: {
     fontSize: 14,
     color: '#7D7D7D',
-  },
-  incomeAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2A9D8F',
-  },
-  expenseAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#E63946',
   },
   divider: {
     width: 1,
@@ -293,8 +289,16 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  incomeAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2A9D8F',
+  },
+  expenseAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#E63946',
+  },
 });
-
-
 
 export default HomeScreen;
