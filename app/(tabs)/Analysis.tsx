@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { BarChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
 
@@ -19,23 +19,65 @@ const AnalysisScreen = () => {
   const dataSets = {
     daily: {
       labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      income: [4000, 7000, 5000, 10000, 6000, 2000, 8000],
-      expense: [2000, 4000, 3000, 6000, 5000, 1000, 7000],
+      data: [
+        { value: 4000, color: '#5ABF2A' }, // Income
+        { value: 2000, color: '#655FD5' }, // Expense
+        { value: 7000, color: '#5ABF2A' },
+        { value: 4000, color: '#655FD5' },
+        { value: 5000, color: '#5ABF2A' },
+        { value: 3000, color: '#655FD5' },
+        { value: 10000, color: '#5ABF2A' },
+        { value: 6000, color: '#655FD5' },
+        { value: 6000, color: '#5ABF2A' },
+        { value: 2000, color: '#655FD5' },
+        { value: 8000, color: '#5ABF2A' },
+        { value: 7000, color: '#655FD5' },
+      ],
     },
     weekly: {
       labels: ['1st Week', '2nd Week', '3rd Week', '4th Week'],
-      income: [11000, 14000, 10000, 12000],
-      expense: [8000, 20000, 9000, 15000],
+      data: [
+        { value: 11000, color: '#5ABF2A' },
+        { value: 8000, color: '#655FD5' },
+        { value: 14000, color: '#5ABF2A' },
+        { value: 20000, color: '#655FD5' },
+        { value: 10000, color: '#5ABF2A' },
+        { value: 9000, color: '#655FD5' },
+        { value: 12000, color: '#5ABF2A' },
+        { value: 15000, color: '#655FD5' },
+      ],
     },
     monthly: {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      income: [47000, 52000, 60000, 49000, 45000, 43000],
-      expense: [32000, 40000, 35000, 37000, 30000, 35000],
+      data: [
+        { value: 47000, color: '#5ABF2A' },
+        { value: 32000, color: '#655FD5' },
+        { value: 52000, color: '#5ABF2A' },
+        { value: 40000, color: '#655FD5' },
+        { value: 60000, color: '#5ABF2A' },
+        { value: 35000, color: '#655FD5' },
+        { value: 49000, color: '#5ABF2A' },
+        { value: 37000, color: '#655FD5' },
+        { value: 45000, color: '#5ABF2A' },
+        { value: 30000, color: '#655FD5' },
+        { value: 43000, color: '#5ABF2A' },
+        { value: 35000, color: '#655FD5' },
+      ],
     },
     year: {
       labels: ['2018', '2019', '2020', '2021', '2022'],
-      income: [400000, 450000, 430000, 470000, 500000],
-      expense: [250000, 280000, 300000, 270000, 300000],
+      data: [
+        { value: 400000, color: '#5ABF2A' },
+        { value: 250000, color: '#655FD5' },
+        { value: 450000, color: '#5ABF2A' },
+        { value: 280000, color: '#655FD5' },
+        { value: 430000, color: '#5ABF2A' },
+        { value: 300000, color: '#655FD5' },
+        { value: 470000, color: '#5ABF2A' },
+        { value: 270000, color: '#655FD5' },
+        { value: 500000, color: '#5ABF2A' },
+        { value: 300000, color: '#655FD5' },
+      ],
     },
   };
 
@@ -84,38 +126,12 @@ const AnalysisScreen = () => {
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Income & Expenses</Text>
           <BarChart
-            data={{
-              labels: currentData.labels,
-              datasets: [
-                { data: currentData.income, color: () => `rgba(34, 193, 195, 1)` },
-                { data: currentData.expense, color: () => `rgba(255, 82, 82, 1)` },
-              ],
-            }}
-            width={Dimensions.get('window').width - 60} 
-            height={220} 
-            yAxisLabel="$" 
-            yAxisSuffix="k" 
-            chartConfig={{
-              backgroundGradientFrom: '#E6FFF5',
-              backgroundGradientTo: '#E6FFF5',
-              decimalPlaces: 0, 
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, 
-              labelColor: () => `#7D7D7D`, 
-              propsForBackgroundLines: {
-                strokeWidth: 1,
-                strokeDasharray: '5,5',
-                stroke: '#E8E8E8',
-              },
-              propsForLabels: {
-                fontSize: 12, 
-                fill: '#7D7D7D', 
-              },
-            }}
-            style={{
-              marginVertical: 10,
-              borderRadius: 10,
-            }}
-            fromZero 
+            data={currentData.data}
+            height={220}
+            barWidth={12}
+            spacing={10}
+            yAxisThickness={0}
+            xAxisThickness={0}
           />
         </View>
 
@@ -125,14 +141,16 @@ const AnalysisScreen = () => {
               <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Income</Text>
               <Text style={styles.summaryValue}>
-                ${currentData.income.reduce((sum, val) => sum + val, 0).toLocaleString()}
+              ${currentData.data.filter((_, index) => index % 2 === 0)
+                .reduce((sum, item) => sum + item.value, 0).toLocaleString()}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Expense</Text>
               <Text style={styles.summaryValue}>
-                ${currentData.expense.reduce((sum, val) => sum + val, 0).toLocaleString()}
+                ${currentData.data.filter((_, index) => index % 2 !== 0) 
+                  .reduce((sum, item) => sum + item.value, 0).toLocaleString()}
               </Text>
             </View>
           </View>
@@ -221,15 +239,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chartContainer: {
-    marginHorizontal: 15, 
-    backgroundColor: '#FFFFFF', 
+    marginHorizontal: 15,
+    backgroundColor: '#FFFFFF',
     borderRadius: 15,
-    padding: 15, 
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 15,
   },
   chartTitle: {
     fontSize: 16,
