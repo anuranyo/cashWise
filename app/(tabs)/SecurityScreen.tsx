@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
   TextInput,
-} from "react-native";
+} from 'react-native';
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import PdfView from "../components/SavingsProgress/pdfView"; // Import PdfView component
 
 const SecurityScreen = () => {
   const router = useRouter();
@@ -19,95 +19,138 @@ const SecurityScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/ProfileScreen')}>
-          <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Security</Text>
-        <TouchableOpacity onPress={() => router.push("./NotificationScreen")}>
-          <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Security Options */}
-      <View style={styles.securityContainer}>
-        <Text style={styles.sectionTitle}>Security</Text>
-
-        {/* Change Pin Option */}
-        <View>
-          <TouchableOpacity
-            style={styles.optionItem}
-            onPress={() => toggleExpand("changePin")}
-          >
-            <Text style={styles.optionText}>Change Pin</Text>
-            <FontAwesome5
-              name={expandedOption === "changePin" ? "chevron-up" : "chevron-down"}
-              size={16}
-              color="#7D7D7D"
-            />
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: "#E6FFF5" }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push("/ProfileScreen")}>
+            <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          {expandedOption === "changePin" && (
-            <View style={styles.expandedContent}>
-              <Text style={styles.descriptionText}>
-                Securely change your PIN.
-              </Text>
-              <TextInput
-                placeholder="Current PIN"
-                secureTextEntry
-                keyboardType="numeric"
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="New PIN"
-                secureTextEntry
-                keyboardType="numeric"
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Confirm New PIN"
-                secureTextEntry
-                keyboardType="numeric"
-                style={styles.input}
-              />
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => alert("PIN Changed")}
-              >
-                <Text style={styles.actionButtonText}>Change PIN</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <Text style={styles.headerTitle}>Security</Text>
+          <TouchableOpacity onPress={() => router.push("/NotificationScreen")}>
+            <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
-        {/* Terms and Conditions Option */}
-        <View>
-          <TouchableOpacity
-            style={styles.optionItem}
-            onPress={() => toggleExpand("termsAndConditions")}
-          >
-            <Text style={styles.optionText}>Terms And Conditions</Text>
-            <FontAwesome5
-              name={
-                expandedOption === "termsAndConditions" ? "chevron-up" : "chevron-down"
-              }
-              size={16}
-              color="#7D7D7D"
-            />
-          </TouchableOpacity>
-          {expandedOption === "termsAndConditions" && (
-            <View style={styles.expandedContent}>
-              <PdfView uri={require("../../assets/pdf/TermsAndConditions.pdf")} />
-            </View>
-          )}
+        {/* Security Options */}
+        <View style={styles.securityContainer}>
+          <Text style={styles.sectionTitle}>Security</Text>
+
+          {/* Change Pin Option */}
+          <View>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={() => toggleExpand("changePin")}
+            >
+              <Text style={styles.optionText}>Change Pin</Text>
+              <FontAwesome5
+                name={expandedOption === "changePin" ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#7D7D7D"
+              />
+            </TouchableOpacity>
+            {expandedOption === "changePin" && (
+              <View style={styles.expandedContent}>
+                <Text style={styles.descriptionText}>
+                  Securely change your PIN.
+                </Text>
+                <TextInput
+                  placeholder="Current PIN"
+                  secureTextEntry
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="New PIN"
+                  secureTextEntry
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="Confirm New PIN"
+                  secureTextEntry
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => alert("PIN Changed")}
+                >
+                  <Text style={styles.actionButtonText}>Change PIN</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Change Password Option */}
+          <View>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={() => toggleExpand("changePassword")}
+            >
+              <Text style={styles.optionText}>Change Password</Text>
+              <FontAwesome5
+                name={
+                  expandedOption === "changePassword"
+                    ? "chevron-up"
+                    : "chevron-down"
+                }
+                size={16}
+                color="#7D7D7D"
+              />
+            </TouchableOpacity>
+            {expandedOption === "changePassword" && (
+              <View style={styles.expandedContent}>
+                <Text style={styles.descriptionText}>
+                  Securely change your password.
+                </Text>
+                <TextInput
+                  placeholder="Current Password"
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="New Password"
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="Confirm New Password"
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => alert("Password Changed")}
+                >
+                  <Text style={styles.actionButtonText}>Change Password</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Terms and Conditions Option */}
+          <View>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={() => router.push("/TermsAndConditionsScreen")}
+            >
+              <Text style={styles.optionText}>Terms And Conditions</Text>
+              <FontAwesome5 name="chevron-right" size={16} color="#7D7D7D" />
+            </TouchableOpacity>
+          </View>
         </View>
+      </ScrollView>
       </View>
-    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    height: '100%',
+    flex: 1,
+    backgroundColor: '#E6FFF5',
+  },
   header: {
     backgroundColor: "#00C9A7",
     paddingVertical: 20,

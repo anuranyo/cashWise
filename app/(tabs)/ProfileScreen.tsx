@@ -17,9 +17,8 @@ const ProfileScreen = () => {
   const profileOptions = [
     { id: '1', icon: 'user', name: 'Edit Profile', route: '/EditProfileScreen' },
     { id: '2', icon: 'shield-alt', name: 'Security', route: './SecurityScreen' },
-    { id: '3', icon: 'cog', name: 'Setting', route: '/SettingsScreen' },
-    { id: '4', icon: 'question-circle', name: 'Help', route: '/HelpScreen' },
-    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: '/LogoutScreen' },
+    { id: '4', icon: 'question-circle', name: 'Help', route: '/FAQScreen' },
+    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: '/auth' },
   ];
   
   const renderProfileOption = ({
@@ -38,7 +37,7 @@ const ProfileScreen = () => {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
@@ -75,6 +74,11 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    height: '100%',
+    flex: 1,
+    backgroundColor: '#E6FFF5',
+  },
   header: {
     backgroundColor: '#00C9A7',
     paddingVertical: 20,
