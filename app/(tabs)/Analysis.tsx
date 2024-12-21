@@ -17,71 +17,61 @@ const AnalysisScreen = () => {
   const screenWidth = Dimensions.get('window').width;
 
   const dataSets = {
-    daily: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      data: [
-        { value: 4000, color: '#5ABF2A' }, // Income
-        { value: 2000, color: '#655FD5' }, // Expense
-        { value: 7000, color: '#5ABF2A' },
-        { value: 4000, color: '#655FD5' },
-        { value: 5000, color: '#5ABF2A' },
-        { value: 3000, color: '#655FD5' },
-        { value: 10000, color: '#5ABF2A' },
-        { value: 6000, color: '#655FD5' },
-        { value: 6000, color: '#5ABF2A' },
-        { value: 2000, color: '#655FD5' },
-        { value: 8000, color: '#5ABF2A' },
-        { value: 7000, color: '#655FD5' },
-      ],
-    },
-    weekly: {
-      labels: ['1st Week', '2nd Week', '3rd Week', '4th Week'],
-      data: [
-        { value: 11000, color: '#5ABF2A' },
-        { value: 8000, color: '#655FD5' },
-        { value: 14000, color: '#5ABF2A' },
-        { value: 20000, color: '#655FD5' },
-        { value: 10000, color: '#5ABF2A' },
-        { value: 9000, color: '#655FD5' },
-        { value: 12000, color: '#5ABF2A' },
-        { value: 15000, color: '#655FD5' },
-      ],
-    },
-    monthly: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      data: [
-        { value: 47000, color: '#5ABF2A' },
-        { value: 32000, color: '#655FD5' },
-        { value: 52000, color: '#5ABF2A' },
-        { value: 40000, color: '#655FD5' },
-        { value: 60000, color: '#5ABF2A' },
-        { value: 35000, color: '#655FD5' },
-        { value: 49000, color: '#5ABF2A' },
-        { value: 37000, color: '#655FD5' },
-        { value: 45000, color: '#5ABF2A' },
-        { value: 30000, color: '#655FD5' },
-        { value: 43000, color: '#5ABF2A' },
-        { value: 35000, color: '#655FD5' },
-      ],
-    },
-    year: {
-      labels: ['2018', '2019', '2020', '2021', '2022'],
-      data: [
-        { value: 400000, color: '#5ABF2A' },
-        { value: 250000, color: '#655FD5' },
-        { value: 450000, color: '#5ABF2A' },
-        { value: 280000, color: '#655FD5' },
-        { value: 430000, color: '#5ABF2A' },
-        { value: 300000, color: '#655FD5' },
-        { value: 470000, color: '#5ABF2A' },
-        { value: 270000, color: '#655FD5' },
-        { value: 500000, color: '#5ABF2A' },
-        { value: 300000, color: '#655FD5' },
-      ],
-    },
+    daily: [
+      { label: 'Mon', income: 420, expense: 117.4 },
+      { label: 'Tue', income: 500, expense: 200 },
+      { label: 'Wed', income: 300, expense: 150 },
+      { label: 'Thu', income: 400, expense: 580 },
+      { label: 'Fri', income: 350, expense: 170 },
+      { label: 'Sat', income: 220, expense: 120 },
+      { label: 'Sun', income: 320, expense: 150 },
+    ],
+    weekly: [
+      { label: '1st W.', income: 4000 , expense: 1000 },
+      { label: '2nd W.', income: 2000, expense: 1200 },
+      { label: '3rd W.', income: 1800, expense: 1100 },
+      { label: '4th W.', income: 1700, expense: 1000 },
+    ],
+    monthly: [
+      { label: 'Jan', income: 12000, expense: 7000 },
+      { label: 'Feb', income: 15000, expense: 10000 },
+      { label: 'Mar', income: 14000, expense: 3000 },
+      { label: 'Apr', income: 8000, expense: 5000 },
+      { label: 'May', income: 10000, expense: 8000 },
+      { label: 'Jun', income: 11000, expense: 9000 },
+      { label: 'Jul', income: 11000, expense: 9000 },
+    ],
+    year: [
+      { label: '2020', income: 93000, expense: 70000 },
+      { label: '2021', income: 98000, expense: 80000 },
+      { label: '2022', income: 89000, expense: 78000 },
+      { label: '2023', income: 90000, expense: 75000 },
+    ],
+  };
+
+  const maxValues = {
+    daily: 1000,
+    weekly: 5000,
+    monthly: 15000,
+    year: 100000,
+  };
+
+  const stepValues = {
+    daily: 200,
+    weekly: 1000,
+    monthly: 3000,
+    year: 20000,
   };
 
   const currentData = dataSets[activeTab];
+
+  const chartData = currentData.flatMap((item) => [
+    { value: item.income, label: item.label, frontColor: '#3BE9DE' }, 
+    { value: item.expense, label: '', frontColor: '#006DFF' }, 
+    { value: 0, label: '', frontColor: 'transparent' }, 
+  ]);
+  const maxValue = maxValues[activeTab];
+  const stepValue = stepValues[activeTab];
 
   return (
     <View style={styles.container}>
@@ -126,34 +116,51 @@ const AnalysisScreen = () => {
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Income & Expenses</Text>
           <BarChart
-            data={currentData.data}
-            height={220}
-            barWidth={12}
-            spacing={10}
-            yAxisThickness={0}
-            xAxisThickness={0}
-          />
+            data={chartData}
+            barWidth={
+              currentData.length <= 4
+              ? (Dimensions.get('window').width * 0.2) / currentData.length - 10
+              : 5 
+          }
+          initialSpacing={currentData.length <= 4 ? 20 : 10}
+          spacing={
+            currentData.length <= 4
+              ? (Dimensions.get('window').width * 0.3) / currentData.length - 15
+              : 10
+          } 
+          barBorderRadius={4}
+          yAxisThickness={1}
+          yAxisColor="lightgray"
+          xAxisThickness={1}
+          xAxisColor="lightgray"
+          yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
+          stepValue={stepValue}
+          maxValue={maxValue}
+          noOfSections={5}
+          yAxisLabelTexts={Array.from({ length: 6 }, (_, i) => `${(i * stepValue) / 1000}k`)}
+          labelWidth={(Dimensions.get('window').width * 0.8) / chartData.length}
+          xAxisLabelTextStyle={{ color: 'gray', textAlign: 'center', fontSize: 12, marginTop: 5, }}
+          width={Dimensions.get('window').width * 0.92} 
+        />
         </View>
 
         {/* Income & Expense Summary */}
         <View style={styles.summaryContainer}>
-            <View style={styles.summaryItem}>
-              <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
-              <Text style={styles.summaryLabel}>Income</Text>
-              <Text style={styles.summaryValue}>
-              ${currentData.data.filter((_, index) => index % 2 === 0)
-                .reduce((sum, item) => sum + item.value, 0).toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <FontAwesome5 name="arrow-" size={24} color="#00D699" />
-              <Text style={styles.summaryLabel}>Expense</Text>
-              <Text style={styles.summaryValue}>
-                ${currentData.data.filter((_, index) => index % 2 !== 0) 
-                  .reduce((sum, item) => sum + item.value, 0).toLocaleString()}
-              </Text>
-            </View>
+          <View style={styles.summaryItem}>
+            <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+            <Text style={styles.summaryLabel}>Income</Text>
+            <Text style={styles.summaryValue}>
+              ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
+            </Text>
           </View>
+          <View style={styles.summaryItem}>
+            <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
+            <Text style={styles.summaryLabel}>Expense</Text>
+            <Text style={styles.summaryValue}>
+              ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Navigation Menu */}
@@ -239,17 +246,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chartContainer: {
-    marginHorizontal: 15,
+    width: '95%', 
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 15,
-    padding: 15,
-  },
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  }, 
   chartTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 10,
-  },
+    paddingLeft: 10, 
+  },  
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
