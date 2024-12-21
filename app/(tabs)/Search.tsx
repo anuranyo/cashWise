@@ -1,29 +1,170 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  FlatList,
+  Animated,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { BarChart } from 'react-native-gifted-charts';
-import { Dimensions } from 'react-native';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 
 const SearchScreen = () => {
+    const categories = [
+        { id: 1, name: 'Food', icon: 'utensils' },
+        { id: 2, name: 'Transport', icon: 'bus' },
+        { id: 3, name: 'Medicine', icon: 'pills' },
+        { id: 4, name: 'Groceries', icon: 'shopping-basket' },
+        { id: 5, name: 'Rent', icon: 'home' },
+        { id: 6, name: 'Gifts', icon: 'gift' },
+        { id: 7, name: 'Savings', icon: 'piggy-bank' },
+        { id: 8, name: 'Entertainment', icon: 'tv' },
+        { id: 9, name: 'More', icon: 'plus' },
+    ];
+
+    const [selectedCategory, setSelectedCategory] = useState('Select the category');
+    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const dropdownHeight = useRef(new Animated.Value(0)).current;
+    const [selectedReport, setSelectedReport] = useState('Income');
+    
+    const handleCategorySelect = (category) => {
+        setSelectedCategory(category.name);
+        toggleDropdown();
+    };
+
+    const [date, setDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const handleDateChange = (event, selectedDate) => {
+        const currentDate = selectedDate || date;
+        setShowDatePicker(false);
+        setDate(currentDate);
+    };
+
+    const formatDate = (date) => {
+        const options = { day: '2-digit', month: 'short', year: 'numeric' };
+        return date.toLocaleDateString('en-GB', options).replace(/\s/g, '/');
+    };
+
+    const toggleDropdown = () => {
+        if (dropdownVisible) {
+          Animated.timing(dropdownHeight, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false,
+          }).start(() => setDropdownVisible(false));
+        } else {
+          setDropdownVisible(true);
+          Animated.timing(dropdownHeight, {
+            toValue: 200, 
+            duration: 300,
+            useNativeDriver: false,
+          }).start();
+        }
+    };
+    
 
     return(
     <View style={styles.container}>
         <ScrollView style={styles.scrollView}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.headerText}>Search</Text>
-              <TouchableOpacity>
+                <Text style={styles.headerText}>Search</Text>
+                <TouchableOpacity style={styles.bellContainer} onPress={() => router.push('./NotificationScreen')}>
                 <FontAwesome5 name="bell" size={24} color="#fff" />
-              </TouchableOpacity>
+                </TouchableOpacity>
             </View>
+
+            {/* Dropdown */}
+            <View style={styles.dropdownContainer}>
+                <TouchableOpacity style={styles.dropdown} onPress={toggleDropdown}>
+                    <Text style={styles.dropdownText}>{selectedCategory}</Text>
+                    <FontAwesome5
+                        name={dropdownVisible ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color="#00C9A7"
+                    />
+                </TouchableOpacity>
+
+            {/* Dropdown Menu */}
+            {dropdownVisible && (
+                <Animated.View style={[styles.dropdownMenu, { height: dropdownHeight }]}>
+                    <FlatList
+                    data={categories}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                    <TouchableOpacity
+                        style={styles.dropdownItem}
+                        onPress={() => handleCategorySelect(item)}
+                        >
+                        <FontAwesome5 name={item.icon} size={20} color="#006DFF" />
+                        <Text style={styles.dropdownItemText}>{item.name}</Text>
+                    </TouchableOpacity>
+                    )}
+                    />
+                </Animated.View>
+             )}
+            </View>
+
+            {/* Date Picker */}
+            <View style={styles.datePickerContainer}>
+                <TouchableOpacity
+                style={styles.datePicker}
+                onPress={() => setShowDatePicker(true)}
+                >
+                <Text style={styles.datePickerText}>{formatDate(date)}</Text>
+                <FontAwesome5 name="calendar-alt" size={20} color="#00C9A7" />
+                </TouchableOpacity>
+            </View>
+
+            {showDatePicker && (
+                <DateTimePicker
+                    value={date}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                />
+            )}
+
+            {/* Report Section */}
+            <View style={styles.reportSection}>
+                <Text style={styles.reportLabel}>Report</Text>
+                <View style={styles.reportOptions}>
+                    <TouchableOpacity
+                        style={styles.radioButton}
+                        onPress={() => setSelectedReport('Income')}
+                    >
+                    <FontAwesome5
+                        name={selectedReport === 'Income' ? 'dot-circle' : 'circle'}
+                        size={16}
+                        color="#00C9A7"
+                    />
+                    <Text style={styles.radioText}>Income</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.radioButton}
+                        onPress={() => setSelectedReport('Expense')}
+                    >
+                    <FontAwesome5
+                        name={selectedReport === 'Expense' ? 'dot-circle' : 'circle'}
+                        size={16}
+                        color="#00C9A7"
+                    />
+                    <Text style={styles.radioText}>Expense</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Search Button */}
+            <TouchableOpacity style={styles.searchButton}>
+                <Text style={styles.searchButtonText}>Search</Text>
+            </TouchableOpacity>
+
         </ScrollView>
 
       {/* Navigation Menu */}
@@ -34,7 +175,6 @@ const SearchScreen = () => {
     );
 };
 
-
 const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -44,135 +184,125 @@ const styles = StyleSheet.create({
       flex: 1,
     },
     header: {
-      backgroundColor: '#00C9A7',
-      padding: 20,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+        backgroundColor: '#00C9A7', 
+        paddingVertical: 20, 
+        borderBottomLeftRadius: 20, 
+        borderBottomRightRadius: 20, 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        position: 'relative',
     },
     headerText: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
-    balanceContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      backgroundColor: '#FFFFFF',
-      borderRadius: 10,
-      padding: 20,
-      margin: 15,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
+    bellContainer: {
+        position: 'absolute',
+        right: 20, 
+        top: '50%', 
+        transform: [{ translateY: -12 }], 
     },
-    balanceItem: {
-      alignItems: 'center',
+    dropdownContainer: {
+        marginTop: 20,
+        marginHorizontal: 20,
     },
-    balanceLabel: {
-      fontSize: 14,
-      color: '#7D7D7D',
+    dropdown: {
+        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
     },
-    balanceValue: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#2A9D8F',
+    dropdownText: {
+        color: '#7D7D7D',
+        fontSize: 16,
     },
-    expenseValue: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#E63946',
+    dropdownMenu: {
+        backgroundColor: '#FFFFFF',
+        overflow: 'hidden',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
+        marginTop: 10,
     },
-    divider: {
-      width: 1,
-      backgroundColor: '#E8E8E8',
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EAEAEA',
     },
-    tabContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginVertical: 15,
+    dropdownItemText: {
+        marginLeft: 10,
+        fontSize: 16,
+        color: '#333',
     },
-    tab: {
-      padding: 10,
-      borderRadius: 20,
-      backgroundColor: '#E8FFF7',
+    datePickerContainer: {
+        marginTop: 20,
+        marginHorizontal: 20,
     },
-    activeTab: {
-      backgroundColor: '#00C9A7',
+    datePicker: {
+        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
     },
-    tabText: {
-      color: '#7D7D7D',
+    datePickerText: {
+        color: '#7D7D7D',
+        fontSize: 16,
     },
-    activeTabText: {
-      color: '#FFFFFF',
-      fontWeight: 'bold',
+    reportSection: {
+        marginTop: 20,
+        marginHorizontal: 20,
     },
-    chartButtonsContainer: {
-      position: 'absolute',
-      top: 10, 
-      right: 10, 
-      flexDirection: 'row', 
-      gap: 10, 
+    reportLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#333',
     },
-    chartButton: {
-      backgroundColor: '#E8FFF7', 
-      padding: 10, 
-      borderRadius: 8, 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      shadowColor: '#000', 
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
+    reportOptions: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
     },
-    chartContainer: {
-      width: '95%', 
-      alignSelf: 'center',
-      backgroundColor: '#FFFFFF',
-      borderRadius: 15,
-      paddingVertical: 15,
-      paddingHorizontal: 10,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
-    }, 
-    chartTitle: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: '#333333',
-      marginBottom: 10,
-      paddingLeft: 10, 
-    },  
-    summaryContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      margin: 15,
-      padding: 15,
-      backgroundColor: '#FFFFFF',
-      borderRadius: 10,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
+    radioButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    summaryItem: {
-      alignItems: 'center',
+    radioText: {
+        marginLeft: 8,
+        fontSize: 16,
+        color: '#333',
     },
-    summaryLabel: {
-      fontSize: 14,
-      color: '#7D7D7D',
-      marginTop: 5,
+    searchButton: {
+        backgroundColor: '#00C9A7',
+        marginHorizontal: 20,
+        marginTop: 20,
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
     },
-    summaryValue: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: '#333333',
+    searchButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     navigation: {
       position: 'absolute',

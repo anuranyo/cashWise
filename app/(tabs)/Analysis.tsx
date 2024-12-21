@@ -80,7 +80,7 @@ const AnalysisScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerText}>Analysis</Text>
-          <TouchableOpacity>
+          <TouchableOpacity style={styles.bellContainer} onPress={() => router.push('./NotificationScreen')}>
             <FontAwesome5 name="bell" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -190,16 +190,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: '#00C9A7',
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: '#00C9A7', 
+    paddingVertical: 20, 
+    borderBottomLeftRadius: 20, 
+    borderBottomRightRadius: 20, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    position: 'relative',
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  bellContainer: {
+    position: 'absolute',
+    right: 20, 
+    top: '50%', 
+    transform: [{ translateY: -12 }], 
   },
   balanceContainer: {
     flexDirection: 'row',
