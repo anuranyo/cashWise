@@ -10,6 +10,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { BarChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import { router } from 'expo-router';
 
 const AnalysisScreen = () => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'year'>('daily');
@@ -115,6 +116,15 @@ const AnalysisScreen = () => {
         {/* Chart */}
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Income & Expenses</Text>
+          {/* Buttons */}
+            <View style={styles.chartButtonsContainer}>
+              <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Search')}>
+              <FontAwesome5 name="search" size={20} color="#006DFF" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Calendar')}>
+              <FontAwesome5 name="calendar" size={20} color="#006DFF" />
+              </TouchableOpacity>
+            </View>
           <BarChart
             data={chartData}
             barWidth={
@@ -244,6 +254,25 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  chartButtonsContainer: {
+    position: 'absolute',
+    top: 10, 
+    right: 10, 
+    flexDirection: 'row', 
+    gap: 10, 
+  },
+  chartButton: {
+    backgroundColor: '#E8FFF7', 
+    padding: 10, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    shadowColor: '#000', 
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   chartContainer: {
     width: '95%', 
