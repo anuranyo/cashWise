@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import Pdf from "react-native-pdf"; // Библиотека для отображения PDF
 
 const SecurityScreen = () => {
   const router = useRouter();
@@ -100,20 +99,6 @@ const SecurityScreen = () => {
           {expandedOption === "termsAndConditions" && (
             <View style={styles.expandedContent}>
               {/* PDF Viewer */}
-              <Pdf
-                source={{
-                  uri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-                  cache: true,
-                }}
-                style={styles.pdf}
-                onLoadComplete={(numberOfPages) =>
-                  console.log(`PDF загружен. Количество страниц: ${numberOfPages}`)
-                }
-                onPageChanged={(page, numberOfPages) =>
-                  console.log(`Страница: ${page} из ${numberOfPages}`)
-                }
-                onError={(error) => console.log("Ошибка отображения PDF:", error)}
-              />
             </View>
           )}
         </View>
