@@ -46,8 +46,8 @@ const HomeScreen = () => {
   const transactions = transactionsData[activeTab];
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <ScrollView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -277,6 +277,7 @@ export const styles = StyleSheet.create({
     padding: 15,
     marginHorizontal: 15,
     marginTop: 10,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
