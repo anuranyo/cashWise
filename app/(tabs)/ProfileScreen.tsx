@@ -15,13 +15,13 @@ const ProfileScreen = () => {
   const router = useRouter();
 
   const profileOptions = [
-    { id: '1', icon: 'user', name: 'Edit Profile', route: './EditProfileScreen' },
+    { id: '1', icon: 'user', name: 'Edit Profile', route: '/EditProfileScreen' },
     { id: '2', icon: 'shield-alt', name: 'Security', route: './SecurityScreen' },
-    { id: '3', icon: 'cog', name: 'Setting', route: './SettingsScreen' },
-    { id: '4', icon: 'question-circle', name: 'Help', route: './HelpScreen' },
-    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: './LogoutScreen' },
+    { id: '3', icon: 'cog', name: 'Setting', route: '/SettingsScreen' },
+    { id: '4', icon: 'question-circle', name: 'Help', route: '/HelpScreen' },
+    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: '/LogoutScreen' },
   ];
-
+  
   const renderProfileOption = ({
     item,
   }: {

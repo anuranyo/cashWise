@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Platform,
 } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import PdfView from "../components/SavingsProgress/pdfView"; // Import PdfView component
 
 const SecurityScreen = () => {
   const router = useRouter();
@@ -22,7 +22,7 @@ const SecurityScreen = () => {
     <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push('/ProfileScreen')}>
           <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Security</Text>
@@ -98,7 +98,7 @@ const SecurityScreen = () => {
           </TouchableOpacity>
           {expandedOption === "termsAndConditions" && (
             <View style={styles.expandedContent}>
-              {/* PDF Viewer */}
+              <PdfView uri={require("../../assets/pdf/TermsAndConditions.pdf")} />
             </View>
           )}
         </View>
@@ -188,11 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
-  },
-  pdf: {
-    flex: 1,
-    width: "100%",
-    height: 400,
   },
 });
 

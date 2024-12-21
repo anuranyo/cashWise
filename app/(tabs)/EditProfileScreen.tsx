@@ -33,7 +33,7 @@ const EditProfileScreen = () => {
     <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push('/ProfileScreen')}>
           <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit My Profile</Text>
