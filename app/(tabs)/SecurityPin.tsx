@@ -1,140 +1,199 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   TextInput,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+  Platform,
+} from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-const SecurityPinScreen = () => {
+
+const SecurityScreen = () => {
   const router = useRouter();
-  const [pin, setPin] = useState(['', '', '', '', '', '']); 
-  const pinInputs = useRef<Array<TextInput | null>>([]); 
+  const [expandedOption, setExpandedOption] = useState<string | null>(null);
 
-  const handleInputChange = (value: string, index: number) => {
-    const newPin = [...pin];
-    newPin[index] = value.slice(-1); // Only allow one digit per input
-    setPin(newPin);
-
-    if (value && index < pin.length - 1) {
-      pinInputs.current[index + 1]?.focus();
-    }
-
-    if (!value && index > 0) {
-      pinInputs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleAccept = () => {
-    const enteredPin = pin.join('');
-    console.log('Entered PIN:', enteredPin);
-    router.push('/NewPassword'); // Navigate to NewPassword screen
+  const toggleExpand = (optionId: string) => {
+    setExpandedOption((prev) => (prev === optionId ? null : optionId));
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Security Pin</Text>
-      <Text style={styles.subHeader}>Enter Security Pin</Text>
-
-      <View style={styles.pinContainer}>
-        {pin.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => (pinInputs.current[index] = ref)} 
-            style={styles.pinBox}
-            value={digit}
-            onChangeText={(value) => handleInputChange(value, index)}
-            maxLength={1} 
-            keyboardType="numeric"
-            autoFocus={index === 0} 
-          />
-        ))}
+    <View style={{ flex: 1 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Security</Text>
+        <TouchableOpacity onPress={() => router.push("./NotificationScreen")}>
+          <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
-        <Text style={styles.buttonText}>Accept</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.sendAgainButton}>
-        <Text style={styles.buttonText}>Send Again</Text>
-      </TouchableOpacity>
+      {/* Security Options */}
+      <View style={styles.securityContainer}>
+        <Text style={styles.sectionTitle}>Security</Text>
 
+        {/* Change Pin Option */}
+        <View>
+          <TouchableOpacity
+            style={styles.optionItem}
+            onPress={() => toggleExpand("changePin")}
+          >
+            <Text style={styles.optionText}>Change Pin</Text>
+            <FontAwesome5
+              name={expandedOption === "changePin" ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#7D7D7D"
+            />
+          </TouchableOpacity>
+          {expandedOption === "changePin" && (
+            <View style={styles.expandedContent}>
+              <Text style={styles.descriptionText}>
+                Securely change your PIN.
+              </Text>
+              <TextInput
+                placeholder="Current PIN"
+                secureTextEntry
+                keyboardType="numeric"
+                style={styles.input}
+              />
+              <TextInput
+                placeholder="New PIN"
+                secureTextEntry
+                keyboardType="numeric"
+                style={styles.input}
+              />
+              <TextInput
+                placeholder="Confirm New PIN"
+                secureTextEntry
+                keyboardType="numeric"
+                style={styles.input}
+              />
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => alert("PIN Changed")}
+              >
+                <Text style={styles.actionButtonText}>Change PIN</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
+        {/* Terms and Conditions Option */}
+        <View>
+          <TouchableOpacity
+            style={styles.optionItem}
+            onPress={() => toggleExpand("termsAndConditions")}
+          >
+            <Text style={styles.optionText}>Terms And Conditions</Text>
+            <FontAwesome5
+              name={
+                expandedOption === "termsAndConditions" ? "chevron-up" : "chevron-down"
+              }
+              size={16}
+              color="#7D7D7D"
+            />
+          </TouchableOpacity>
+          {expandedOption === "termsAndConditions" && (
+            <View style={styles.expandedContent}>
+
+            </View>
+          )}
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#E5FFF4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#00D699',
-    marginBottom: 20,
+    backgroundColor: "#00C9A7",
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  subHeader: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  securityContainer: {
+    paddingHorizontal: 15,
+    marginTop: 20,
+  },
+  sectionTitle: {
     fontSize: 18,
-    color: '#7D7D7D',
-    marginBottom: 20,
-  },
-  pinContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  pinBox: {
-    width: 50, 
-    height: 50,
-    padding: 0,
-    borderRadius: 10, 
-    borderWidth: 2,
-    borderColor: '#00D699',
-    textAlign: 'center',
-    fontSize: 24,
-    color: '#00D699',
-    marginHorizontal: 5,
-    paddingVertical: 5, 
-  },  
-  acceptButton: {
-    backgroundColor: '#00D699',
-    width: '80%',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
+    fontWeight: "bold",
+    color: "#333333",
     marginBottom: 10,
   },
-  sendAgainButton: {
-    backgroundColor: '#D9EDE8',
-    width: '80%',
+  optionItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#333333",
+  },
+  expandedContent: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: "#7D7D7D",
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    color: "#333333",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+  },
+  actionButton: {
+    backgroundColor: "#00C9A7",
     padding: 15,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: 10,
   },
-  buttonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+  actionButtonText: {
     fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
-  footerText: {
-    marginTop: 20,
-    color: '#7D7D7D',
-    fontSize: 14,
-  },
-  socialText: {
-    fontWeight: 'bold',
-    color: '#00D699',
-  },
-  linkText: {
-    fontWeight: 'bold',
-    color: '#00D699',
+  pdf: {
+    width: "100%",
+    height: 500,
   },
 });
 
-export default SecurityPinScreen;
+export default SecurityScreen;
