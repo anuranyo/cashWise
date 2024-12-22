@@ -9,6 +9,7 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BarChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
+import MyTargets from '../components/SavingsProgress/MyTargets';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
 import { router } from 'expo-router';
 
@@ -79,9 +80,12 @@ const AnalysisScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>Analysis</Text>
-          <TouchableOpacity style={styles.bellContainer} onPress={() => router.push('./NotificationScreen')}>
-            <FontAwesome5 name="bell" size={24} color="#fff" />
+          <TouchableOpacity onPress={() => router.push('/HomeScreen')}>
+            <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Analysis</Text>
+          <TouchableOpacity>
+            <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={() => router.push('./NotificationScreen')}/>
           </TouchableOpacity>
         </View>
 
@@ -131,47 +135,50 @@ const AnalysisScreen = () => {
               currentData.length <= 4
               ? (Dimensions.get('window').width * 0.2) / currentData.length - 10
               : 5 
-          }
-          initialSpacing={currentData.length <= 4 ? 20 : 10}
-          spacing={
-            currentData.length <= 4
-              ? (Dimensions.get('window').width * 0.3) / currentData.length - 15
-              : 10
-          } 
-          barBorderRadius={4}
-          yAxisThickness={1}
-          yAxisColor="lightgray"
-          xAxisThickness={1}
-          xAxisColor="lightgray"
-          yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
-          stepValue={stepValue}
-          maxValue={maxValue}
-          noOfSections={5}
-          yAxisLabelTexts={Array.from({ length: 6 }, (_, i) => `${(i * stepValue) / 1000}k`)}
-          labelWidth={(Dimensions.get('window').width * 0.8) / chartData.length}
-          xAxisLabelTextStyle={{ color: 'gray', textAlign: 'center', fontSize: 12, marginTop: 5, }}
-          width={Dimensions.get('window').width * 0.92} 
-        />
-        </View>
+            }
+            initialSpacing={currentData.length <= 4 ? 20 : 10}
+            spacing={
+              currentData.length <= 4
+                ? (Dimensions.get('window').width * 0.3) / currentData.length - 15
+                : 10
+            } 
+            barBorderRadius={4}
+            yAxisThickness={1}
+            yAxisColor="lightgray"
+            xAxisThickness={1}
+            xAxisColor="lightgray"
+            yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
+            stepValue={stepValue}
+            maxValue={maxValue}
+            noOfSections={5}
+            yAxisLabelTexts={Array.from({ length: 6 }, (_, i) => `${(i * stepValue) / 1000}k`)}
+            labelWidth={(Dimensions.get('window').width * 0.8) / chartData.length}
+            xAxisLabelTextStyle={{ color: 'gray', textAlign: 'center', fontSize: 12, marginTop: 5, }}
+            width={Dimensions.get('window').width * 0.92} 
+          />
+          </View>
 
-        {/* Income & Expense Summary */}
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryItem}>
-            <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
-            <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={styles.summaryValue}>
-              ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
-            </Text>
+          {/* Income & Expense Summary */}
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryItem}>
+              <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
+              <Text style={styles.summaryLabel}>Income</Text>
+              <Text style={styles.summaryValue}>
+                ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
+              <Text style={styles.summaryLabel}>Expense</Text>
+              <Text style={styles.summaryValue}>
+                ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
+              </Text>
+            </View>
           </View>
-          <View style={styles.summaryItem}>
-            <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
-            <Text style={styles.summaryLabel}>Expense</Text>
-            <Text style={styles.summaryValue}>
-              ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
+
+          {/* Circular Progress Charts */}
+            <MyTargets />
+        </ScrollView>
 
       {/* Navigation Menu */}
       <View style={styles.navigation}>
@@ -188,20 +195,29 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingBottom: 100,
   },
   header: {
-    backgroundColor: '#00C9A7', 
-    paddingVertical: 20, 
-    borderBottomLeftRadius: 20, 
-    borderBottomRightRadius: 20, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    position: 'relative',
+    backgroundColor: '#00C9A7',
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  headerText: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 20,
+    marginLeft: 15,
   },
   bellContainer: {
     position: 'absolute',
@@ -327,6 +343,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
+  },
+  targetsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    marginHorizontal: 20,
   },
   navigation: {
     position: 'absolute',

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Modal,
   FlatList,
   Animated,
 } from 'react-native';
@@ -74,9 +73,12 @@ const SearchScreen = () => {
         <ScrollView style={styles.scrollView}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerText}>Search</Text>
-                <TouchableOpacity style={styles.bellContainer} onPress={() => router.push('./NotificationScreen')}>
-                <FontAwesome5 name="bell" size={24} color="#fff" />
+                <TouchableOpacity onPress={() => router.push('/Analysis')}>
+                    <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Search</Text>
+                <TouchableOpacity>
+                    <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -184,18 +186,26 @@ const styles = StyleSheet.create({
       flex: 1,
     },
     header: {
-        backgroundColor: '#00C9A7', 
-        paddingVertical: 20, 
-        borderBottomLeftRadius: 20, 
-        borderBottomRightRadius: 20, 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        position: 'relative',
+        backgroundColor: '#00C9A7',
+        paddingVertical: 20,
+        paddingHorizontal: 15,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
     },
-    headerText: {
+    headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333333',
+        marginTop: 20,
+        marginLeft: 15,
     },
     bellContainer: {
         position: 'absolute',
