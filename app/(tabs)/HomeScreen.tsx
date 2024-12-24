@@ -1,33 +1,3 @@
-//Нужно чтобы через парамс передавало на все страницы 
-//У транзакций нет айди юзера
-//Вернуть 
-//  {/* Balance */}
-//  <View style={styles.balanceContainer}>
-//  <View style={styles.balanceItem}>
-//    <Text style={styles.balanceLabel}>Total Balance</Text>
-//    <Text style={styles.incomeAmount}>$7,783.00</Text>
-//  </View>
-//  <View style={styles.divider} />
-//  <View style={styles.balanceItem}>
-//    <Text style={styles.balanceLabel}>Total Expense</Text>
-//    <Text style={styles.expenseAmount}>-$1,187.40</Text>
-//  </View>
-// </View>
-
-//  {/* Savings and Revenue */}
-//  <View style={styles.savingsContainer}>
-//    <SavingsProgress />
-//    <View style={styles.dividerVertical} />
-//    <View style={styles.revenueCont}>
-//      <View>
-//        <Text style={styles.revenueLabel}>Current Amount</Text>
-//        <Text style={styles.revenueAmount}>$4,000.00</Text>
-//      </View>
-//    </View>
-// </View>
-
-
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -42,6 +12,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { fetchData } from '../services/api';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
 
 type Transaction = {
   id: string;
@@ -58,6 +29,8 @@ const HomeScreen = () => {
   const { userID } = useLocalSearchParams(); // Getting userID from parameters
   const [fullName, setFullName] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
   const today = new Date().toISOString().split('T')[0];
@@ -115,6 +88,32 @@ const HomeScreen = () => {
           type: t.type,
         }));
         setTransactions(formattedTransactions);
+
+
+        // Fetch total income
+        const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+
+        if (incomeResponse?.totalIncome) {
+          setTotalIncome(incomeResponse.totalIncome);
+        } else {
+          console.error('Invalid total income response:', incomeResponse);
+        }
+
+        // Fetch total expense
+        const expenseResponse = await fetchData(`transaction/getTotalExpense?userID=${userID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+        
         
       } else {
         console.error('Unexpected transactions response format:', transactionsResponse);
@@ -138,6 +137,8 @@ const HomeScreen = () => {
       </View>
     );
   }
+  
+  const totalBalance = totalIncome - totalExpense;
 
   return (
     <View style={styles.container}>
@@ -156,7 +157,7 @@ const HomeScreen = () => {
         </View>
 
         {/* Balance */}
-        {/* <View style={styles.balanceContainer}>
+        <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Balance</Text>
             <Text style={styles.incomeAmount}>${totalBalance.toFixed(2)}</Text>
@@ -166,19 +167,19 @@ const HomeScreen = () => {
             <Text style={styles.balanceLabel}>Total Expense</Text>
             <Text style={styles.expenseAmount}>-${totalExpense.toFixed(2)}</Text>
           </View>
-        </View> */}
+        </View>
 
         {/* Savings and Revenue */}
-        {/* <View style={styles.savingsContainer}>
-          <SavingsProgress savingsAmount={totalBalance} goal={10000} />
+        <View style={styles.savingsContainer}>
+          <SavingsProgress savingsAmount={totalIncome} goal={10000} />
           <View style={styles.dividerVertical} />
           <View style={styles.revenueCont}>
             <View>
               <Text style={styles.revenueLabel}>Current Amount</Text>
-              <Text style={styles.revenueAmount}>${totalBalance.toFixed(2)}</Text>
+              <Text style={styles.revenueAmount}>${totalIncome.toFixed(2)}</Text>
             </View>
           </View>
-        </View> */}
+        </View>
 
 
         {/* Tabs */}
@@ -307,11 +308,79 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  balanceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    margin: 20,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  balanceItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  balanceLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
   incomeAmount: {
-    color: '#2A9D8F',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#00C9A7',
+    marginTop: 5,
   },
   expenseAmount: {
-    color: '#E63946',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FF5252',
+    marginTop: 5,
+  },
+  divider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#E8E8E8',
+    marginHorizontal: 10,
+  },
+  savingsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 20,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dividerVertical: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#E8E8E8',
+    marginHorizontal: 10,
+  },
+  revenueCont: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  revenueLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  revenueAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#00C9A7',
+    marginTop: 5,
   },
 });
 

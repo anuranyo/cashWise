@@ -1,15 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTabContext } from '../../contexts/TabContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BottomNavigation = () => {
   const { activeTab, setActiveTab } = useTabContext();
+  const [userID, setUserID] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserID = async () => {
+      const storedUserID = await AsyncStorage.getItem('userID');
+      setUserID(storedUserID);
+    };
+    fetchUserID();
+  }, []);
 
   const handleNavigation = (tab: 'home' | 'chart' | 'transfer' | 'layers' | 'profile', path: string) => {
     setActiveTab(tab);
-    router.push(path as any);
+    router.push({
+      pathname: path,
+      params: { userID },
+    });
   };
 
   return (
