@@ -1,80 +1,123 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { BarChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import MyTargets from '../components/SavingsProgress/MyTargets';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { fetchData } from '../services/api';
+
+type Transaction = {
+  id: string;
+  icon: string;
+  name: string;
+  time: string;
+  category: string;
+  amount: string;
+  type: string;
+};
+
+type DataSets = {
+  daily: Transaction[];
+  weekly: Transaction[];
+  monthly: Transaction[];
+};
 
 const AnalysisScreen = () => {
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'year'>('daily');
+  const { userID } = useLocalSearchParams(); // Получаем userID из параметров
+  const [fullName, setFullName] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [dataSets, setDataSets] = useState<DataSets>({
+    daily: [],
+    weekly: [],
+    monthly: [],
+  });
+  const [totalBalance, setTotalBalance] = useState(0); // Загальний баланс
 
   const screenWidth = Dimensions.get('window').width;
+  const currentDate = new Date().toISOString().split('T')[0];
 
-  const dataSets = {
-    daily: [
-      { label: 'Mon', income: 420, expense: 117.4 },
-      { label: 'Tue', income: 500, expense: 200 },
-      { label: 'Wed', income: 300, expense: 150 },
-      { label: 'Thu', income: 400, expense: 580 },
-      { label: 'Fri', income: 350, expense: 170 },
-      { label: 'Sat', income: 220, expense: 120 },
-      { label: 'Sun', income: 320, expense: 150 },
-    ],
-    weekly: [
-      { label: '1st W.', income: 4000 , expense: 1000 },
-      { label: '2nd W.', income: 2000, expense: 1200 },
-      { label: '3rd W.', income: 1800, expense: 1100 },
-      { label: '4th W.', income: 1700, expense: 1000 },
-    ],
-    monthly: [
-      { label: 'Jan', income: 12000, expense: 7000 },
-      { label: 'Feb', income: 15000, expense: 10000 },
-      { label: 'Mar', income: 14000, expense: 3000 },
-      { label: 'Apr', income: 8000, expense: 5000 },
-      { label: 'May', income: 10000, expense: 8000 },
-      { label: 'Jun', income: 11000, expense: 9000 },
-      { label: 'Jul', income: 11000, expense: 9000 },
-    ],
-    year: [
-      { label: '2020', income: 93000, expense: 70000 },
-      { label: '2021', income: 98000, expense: 80000 },
-      { label: '2022', income: 89000, expense: 78000 },
-      { label: '2023', income: 90000, expense: 75000 },
-    ],
-  };
+  useEffect(() => {
+      const fetchServerData = async () => {
+        try {
+          setLoading(true);
+  
+          if (!userID) {
+            console.error('userID not found in params');
+            return;
+          }
+  
+          // Получаем данные пользователя
+          console.log(userID);
+          const userResponse = await fetchData(`getUserByID/${userID}`,{method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          });
+          console.log(userResponse);
+          if (userResponse && userResponse.fullName) {
+            setFullName(userResponse.fullName)
+          } else {
+            console.error('Invalid user response:', userResponse);
+          }
+  
+          let formattedTransactions: Transaction[] = [];
+          // Получаем транзакции
+          const transactionsResponse = await fetchData('transactions');
+          if (Array.isArray(transactionsResponse)) {
+            formattedTransactions = transactionsResponse.map((t: any) => ({
+              id: t.transactionID.toString(),
+              icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
+              name: t.description,
+              time: t.date,
+              category: t.categoryID.toString(),
+              amount: t.amount, // amount залишається string
+              type: t.type,
+            }));
 
-  const maxValues = {
-    daily: 1000,
-    weekly: 5000,
-    monthly: 15000,
-    year: 100000,
-  };
+            setTransactions(formattedTransactions);
 
-  const stepValues = {
-    daily: 200,
-    weekly: 1000,
-    monthly: 3000,
-    year: 20000,
-  };
+            // Розраховуємо загальний баланс
+            const income = formattedTransactions
+              .filter((t) => t.type === 'income')
+              .reduce((sum, t) => sum + parseFloat(t.amount), 0); // Конвертація в число для підрахунку
+            const expense = formattedTransactions
+              .filter((t) => t.type === 'expense')
+              .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-  const currentData = dataSets[activeTab];
+          setTotalBalance(income - expense);
+          } else {
+            console.error('Unexpected transactions response format:', transactionsResponse);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchServerData();
+    }, [userID]);
 
-  const chartData = currentData.flatMap((item) => [
-    { value: item.income, label: item.label, frontColor: '#3BE9DE' }, 
-    { value: item.expense, label: '', frontColor: '#006DFF' }, 
-    { value: 0, label: '', frontColor: 'transparent' }, 
-  ]);
-  const maxValue = maxValues[activeTab];
-  const stepValue = stepValues[activeTab];
-
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#00C9A7" />
+        <Text>Loading data...</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -93,22 +136,29 @@ const AnalysisScreen = () => {
         <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.balanceValue}>$7,783.00</Text>
+            <Text style={styles.balanceValue}>
+            ${totalBalance.toLocaleString()}
+            </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Expense</Text>
-            <Text style={styles.expenseValue}>-$1,187.40</Text>
+            <Text style={styles.expenseValue}>
+            -${transactions
+        .filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0) // Конвертуємо amount у число
+        .toLocaleString()}
+            </Text>
           </View>
         </View>
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
-          {['daily', 'weekly', 'monthly', 'year'].map((tab) => (
+          {['daily', 'weekly', 'monthly'].map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab as 'daily' | 'weekly' | 'monthly' | 'year')}
+              onPress={() => setActiveTab(tab as 'daily' | 'weekly' | 'monthly')}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -117,10 +167,10 @@ const AnalysisScreen = () => {
           ))}
         </View>
 
-        {/* Chart */}
+        {/* Chart 
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Income & Expenses</Text>
-          {/* Buttons */}
+          {/* Buttons 
             <View style={styles.chartButtonsContainer}>
               <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Search')}>
               <FontAwesome5 name="search" size={20} color="#006DFF" />
@@ -129,52 +179,47 @@ const AnalysisScreen = () => {
               <FontAwesome5 name="calendar" size={20} color="#006DFF" />
               </TouchableOpacity>
             </View>
-          <BarChart
+            <BarChart
             data={chartData}
-            barWidth={
-              currentData.length <= 4
-              ? (Dimensions.get('window').width * 0.2) / currentData.length - 10
-              : 5 
-            }
-            initialSpacing={currentData.length <= 4 ? 20 : 10}
-            spacing={
-              currentData.length <= 4
-                ? (Dimensions.get('window').width * 0.3) / currentData.length - 15
-                : 10
-            } 
+            barWidth={10}
+            spacing={20}
             barBorderRadius={4}
             yAxisThickness={1}
             yAxisColor="lightgray"
             xAxisThickness={1}
             xAxisColor="lightgray"
             yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
-            stepValue={stepValue}
-            maxValue={maxValue}
+            stepValue={1000}
+            maxValue={Math.max(...chartData.map((d) => d.value))}
             noOfSections={5}
-            yAxisLabelTexts={Array.from({ length: 6 }, (_, i) => `${(i * stepValue) / 1000}k`)}
-            labelWidth={(Dimensions.get('window').width * 0.8) / chartData.length}
-            xAxisLabelTextStyle={{ color: 'gray', textAlign: 'center', fontSize: 12, marginTop: 5, }}
-            width={Dimensions.get('window').width * 0.92} 
+            labelWidth={40}
+            xAxisLabelTextStyle={{
+              color: 'gray',
+              textAlign: 'center',
+              fontSize: 12,
+              marginTop: 5,
+            }}
+            width={Dimensions.get('window').width * 0.92}
           />
-          </View>
+          </View>*/}
 
-          {/* Income & Expense Summary */}
+          {/* Income & Expense Summary 
           <View style={styles.summaryContainer}>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Income</Text>
               <Text style={styles.summaryValue}>
-                ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
+              ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
               <Text style={styles.summaryLabel}>Expense</Text>
               <Text style={styles.summaryValue}>
-                ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
+              ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
               </Text>
             </View>
-          </View>
+          </View>*/}
 
           {/* Circular Progress Charts */}
             <MyTargets />
