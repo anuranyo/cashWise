@@ -23,101 +23,131 @@ type Transaction = {
   category: string;
   amount: string;
   type: string;
+  userID: string;
 };
 
-type DataSets = {
-  daily: Transaction[];
-  weekly: Transaction[];
-  monthly: Transaction[];
+type ChartData = {
+  value: number;
+  label: string;
+  frontColor: string;
 };
 
 const AnalysisScreen = () => {
-  const { userID } = useLocalSearchParams(); // Получаем userID из параметров
+  const { userID } = useLocalSearchParams();
   const [fullName, setFullName] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [dataSets, setDataSets] = useState<DataSets>({
-    daily: [],
-    weekly: [],
-    monthly: [],
-  });
-  const [totalBalance, setTotalBalance] = useState(0); // Загальний баланс
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [income, setIncome] = useState(0);
+  const [expense, setExpense] = useState(0);
 
-  const screenWidth = Dimensions.get('window').width;
-  const currentDate = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
+  const today = new Date().toISOString().split('T')[0];
+  
+    useEffect(() => {
       const fetchServerData = async () => {
         try {
           setLoading(true);
   
+          // Check if userID exists
           if (!userID) {
             console.error('userID not found in params');
             return;
           }
   
-          // Получаем данные пользователя
-          console.log(userID);
-          const userResponse = await fetchData(`getUserByID/${userID}`,{method: 'GET',
+          // Fetch user data
+          const userResponse = await fetchData(`getUserByID/${userID}`, {
+            method: 'GET',
             headers: {
               'Content-Type': 'application/json',
               'ngrok-skip-browser-warning': 'true',
             },
           });
-          console.log(userResponse);
+  
           if (userResponse && userResponse.fullName) {
-            setFullName(userResponse.fullName)
+            setFullName(userResponse.fullName);
           } else {
             console.error('Invalid user response:', userResponse);
           }
+          console.log('Fetching data for userID:', userID);
   
-          let formattedTransactions: Transaction[] = [];
-          // Получаем транзакции
-          const transactionsResponse = await fetchData('transactions');
-          if (Array.isArray(transactionsResponse)) {
-            formattedTransactions = transactionsResponse.map((t: any) => ({
-              id: t.transactionID.toString(),
-              icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
-              name: t.description,
-              time: t.date,
-              category: t.categoryID.toString(),
-              amount: t.amount, // amount залишається string
-              type: t.type,
-            }));
-
-            setTransactions(formattedTransactions);
-
-            // Розраховуємо загальний баланс
-            const income = formattedTransactions
-              .filter((t) => t.type === 'income')
-              .reduce((sum, t) => sum + parseFloat(t.amount), 0); // Конвертація в число для підрахунку
-            const expense = formattedTransactions
-              .filter((t) => t.type === 'expense')
-              .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-
-          setTotalBalance(income - expense);
-          } else {
-            console.error('Unexpected transactions response format:', transactionsResponse);
+        // Fetch transactions data based on activeTab
+        const transactionsResponse = await fetchData(
+          `transactions/filter?period=${activeTab}&date=${today}&userID=${userID}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
           }
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
+        );
   
-      fetchServerData();
-    }, [userID]);
+        console.log('Transactions response:', transactionsResponse);
+  
+        if (Array.isArray(transactionsResponse)) {
+          const formattedTransactions = transactionsResponse.map((t: any) => ({
+            id: t.transactionID.toString(),
+            userID: t.userID.toString(),
+            icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
+            name: t.description,
+            time: new Date(t.date).toLocaleString(), // Format date
+            category: t.categoryID.toString(),
+            amount: `$${t.amount.toFixed(2)}`, 
+            type: t.type,
+          }));
+          setTransactions(formattedTransactions);
+          
+          // Формуємо дані для діаграми
+          const groupedData = formattedTransactions.reduce(
+            (acc, transaction) => {
+              const { type, amount } = transaction;
+              const value = parseFloat(amount); // Конвертуємо у число
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#00C9A7" />
-        <Text>Loading data...</Text>
-      </View>
-    );
-  }
+              if (type === 'income') {
+                acc.income += value;
+              } else if (type === 'expense') {
+                acc.expense += value;
+              }
+              return acc;
+            },
+            { income: 0, expense: 0 }
+          );
+
+          setIncome(groupedData.income);
+          setExpense(groupedData.expense);
+
+          const chartDataFormatted: ChartData[] = formattedTransactions.map((transaction) => ({
+            value: parseFloat(transaction.amount), 
+            label: new Date(transaction.time).toLocaleDateString('en-US', { weekday: 'short' }),
+            frontColor: transaction.type === 'income' ? '#3BE9DE' : '#FF6F61',
+          }));
+          
+          setChartData(chartDataFormatted);
+
+        } else {
+          console.error('Unexpected transactions response format:', transactionsResponse);
+        }
+        } catch (error) {
+        console.error('Error fetching data:', error);
+        } finally {
+        setLoading(false);
+        }
+        };
+  
+        fetchServerData();
+        }, [userID, activeTab]); 
+  
+  
+    if (loading) {
+      return (
+        <View style={styles.container}>
+          <ActivityIndicator size="large" color="#00C9A7" />
+          <Text>Loading...</Text>
+        </View>
+      );
+    }
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -132,7 +162,7 @@ const AnalysisScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Balance */}
+        {/* Balance 
         <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Balance</Text>
@@ -150,7 +180,7 @@ const AnalysisScreen = () => {
         .toLocaleString()}
             </Text>
           </View>
-        </View>
+        </View>*/}
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
@@ -167,10 +197,10 @@ const AnalysisScreen = () => {
           ))}
         </View>
 
-        {/* Chart 
+        {/* Chart */}
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Income & Expenses</Text>
-          {/* Buttons 
+          {/* Buttons */}
             <View style={styles.chartButtonsContainer}>
               <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Search')}>
               <FontAwesome5 name="search" size={20} color="#006DFF" />
@@ -190,7 +220,7 @@ const AnalysisScreen = () => {
             xAxisColor="lightgray"
             yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
             stepValue={1000}
-            maxValue={Math.max(...chartData.map((d) => d.value))}
+            maxValue={Math.max(income, expense)}
             noOfSections={5}
             labelWidth={40}
             xAxisLabelTextStyle={{
@@ -201,25 +231,25 @@ const AnalysisScreen = () => {
             }}
             width={Dimensions.get('window').width * 0.92}
           />
-          </View>*/}
+          </View>
 
-          {/* Income & Expense Summary 
+          {/* Income & Expense Summary */}
           <View style={styles.summaryContainer}>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Income</Text>
               <Text style={styles.summaryValue}>
-              ${currentData.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
+              ${income.toLocaleString()}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
               <Text style={styles.summaryLabel}>Expense</Text>
               <Text style={styles.summaryValue}>
-              ${currentData.reduce((sum, item) => sum + item.expense, 0).toLocaleString()}
+              ${expense.toLocaleString()}
               </Text>
             </View>
-          </View>*/}
+          </View>
 
           {/* Circular Progress Charts */}
             <MyTargets />
