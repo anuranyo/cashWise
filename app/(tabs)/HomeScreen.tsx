@@ -28,22 +28,20 @@
 
 
 
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
-  ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { fetchData } from '../services/api';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 type Transaction = {
   id: string;
@@ -53,66 +51,84 @@ type Transaction = {
   category: string;
   amount: string;
   type: string;
+  userID: string;
 };
 
 const HomeScreen = () => {
-  const { userID } = useLocalSearchParams(); // Получаем userID из параметров
+  const { userID } = useLocalSearchParams(); // Getting userID from parameters
   const [fullName, setFullName] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchServerData = async () => {
       try {
         setLoading(true);
 
+        // Check if userID exists
         if (!userID) {
           console.error('userID not found in params');
           return;
         }
 
-        // Получаем данные пользователя
-        console.log(userID);
-        const userResponse = await fetchData(`getUserByID/${userID}`,{method: 'GET',
+        // Fetch user data
+        const userResponse = await fetchData(`getUserByID/${userID}`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',
           },
         });
-        console.log(userResponse);
+
         if (userResponse && userResponse.fullName) {
-          setFullName(userResponse.fullName)
+          setFullName(userResponse.fullName);
         } else {
           console.error('Invalid user response:', userResponse);
         }
+        console.log('Fetching data for userID:', userID);
 
-        // Получаем транзакции
-        const transactionsResponse = await fetchData('transactions');
-        if (Array.isArray(transactionsResponse)) {
-          setTransactions(
-            transactionsResponse.map((t: any) => ({
-              id: t.transactionID.toString(),
-              icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
-              name: t.description,
-              time: t.date,
-              category: t.categoryID.toString(),
-              amount: `$${t.amount}`,
-              type: t.type,
-            }))
-          );
-        } else {
-          console.error('Unexpected transactions response format:', transactionsResponse);
+      // Fetch transactions data based on activeTab
+      const transactionsResponse = await fetchData(
+        `transactions/filter?period=${activeTab}&date=${today}&userID=${userID}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
-    fetchServerData();
-  }, [userID]);
+      console.log('Transactions response:', transactionsResponse);
+
+      if (Array.isArray(transactionsResponse)) {
+        const formattedTransactions = transactionsResponse.map((t: any) => ({
+          id: t.transactionID.toString(),
+          userID: t.userID.toString(),
+          icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
+          name: t.description,
+          time: new Date(t.date).toLocaleString(), // Format date
+          category: t.categoryID.toString(),
+          amount: `$${t.amount.toFixed(2)}`, // Format amount
+          type: t.type,
+        }));
+        setTransactions(formattedTransactions);
+        
+      } else {
+        console.error('Unexpected transactions response format:', transactionsResponse);
+      }
+      } catch (error) {
+      console.error('Error fetching data:', error);
+      } finally {
+      setLoading(false);
+      }
+      };
+
+      fetchServerData();
+      }, [userID, activeTab]); // Refetch when activeTab changes
+
 
   if (loading) {
     return (
@@ -139,9 +155,35 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Balance */}
+        {/* <View style={styles.balanceContainer}>
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.incomeAmount}>${totalBalance.toFixed(2)}</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLabel}>Total Expense</Text>
+            <Text style={styles.expenseAmount}>-${totalExpense.toFixed(2)}</Text>
+          </View>
+        </View> */}
+
+        {/* Savings and Revenue */}
+        {/* <View style={styles.savingsContainer}>
+          <SavingsProgress savingsAmount={totalBalance} goal={10000} />
+          <View style={styles.dividerVertical} />
+          <View style={styles.revenueCont}>
+            <View>
+              <Text style={styles.revenueLabel}>Current Amount</Text>
+              <Text style={styles.revenueAmount}>${totalBalance.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View> */}
+
+
         {/* Tabs */}
         <View style={styles.tabContainer}>
-          {(['daily', 'weekly', 'monthly'] as Array<'daily' | 'weekly' | 'monthly'>).map((tab) => (
+          {(['day', 'week', 'month'] as Array<'day' | 'week' | 'month'>).map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tabButton, activeTab === tab && styles.activeTab]}
