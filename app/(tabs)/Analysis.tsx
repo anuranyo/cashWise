@@ -42,6 +42,31 @@ const AnalysisScreen = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
+  const handleSearch = () => {
+      router.push({
+        pathname: `/Search`,
+        params: { userID: userID },
+      });
+  };
+  const handleCalendar = () => {
+    router.push({
+      pathname: `/Calendar`,
+      params: { userID: userID },
+    });
+  };
+  const handleHome = () => {
+    router.push({
+      pathname: `/HomeScreen`,
+      params: { userID: userID },
+    });
+  };
+  const handleNotification = () => {
+    router.push({
+      pathname: `/NotificationScreen`,
+      params: { userID: userID },
+    });
+  };
+
   const today = new Date();
   
   const isToday = (date: Date) => date.toDateString() === today.toDateString();
@@ -159,7 +184,7 @@ const AnalysisScreen = () => {
   
         data.push({
           value: weekIncome,
-          label: `Week ${currentWeek - weekOffset}`,
+          label: `W ${currentWeek - weekOffset}`,
           frontColor: '#00D699',
         });
   
@@ -207,9 +232,8 @@ const AnalysisScreen = () => {
     }
   
     setChartData(data);
-    calculateSummary(filteredTransactions); // Update summary based on filtered transactions
+    calculateSummary(filteredTransactions);  
   };
-  
 
   useEffect(() => {
     setLoading(true);
@@ -242,12 +266,12 @@ const AnalysisScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/HomeScreen')}>
+          <TouchableOpacity onPress={handleHome}>
             <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Analysis</Text>
           <TouchableOpacity>
-            <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={() => router.push('./NotificationScreen')}/>
+            <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={handleNotification}/>
           </TouchableOpacity>
         </View>
 
@@ -288,39 +312,39 @@ const AnalysisScreen = () => {
           <Text style={styles.chartTitle}>Income & Expenses</Text>
           {/* Buttons */}
             <View style={styles.chartButtonsContainer}>
-              <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Search')}>
+              <TouchableOpacity style={styles.chartButton} onPress={handleSearch}>
               <FontAwesome5 name="search" size={20} color="#006DFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chartButton} onPress={() => router.push('/Calendar')}>
+              <TouchableOpacity style={styles.chartButton} onPress={handleCalendar}>
               <FontAwesome5 name="calendar" size={20} color="#006DFF" />
               </TouchableOpacity>
             </View>
             <BarChart
-  data={chartData}
-  barWidth={10}
-  spacing={10}
-  barBorderRadius={5}
-  yAxisThickness={1}
-  yAxisColor="gray"
-  yAxisTextStyle={{ color: 'gray', fontSize: 11 }}
-  xAxisThickness={1}
-  xAxisColor="gray"
-  xAxisLabelTextStyle={{
-    color: 'gray',
-    fontSize: 12,
-    textAlign: 'center',
-    flex: 1,
-  }}
-  noOfSections={activeTab === 'daily' ? 6 : activeTab === 'weekly' ? 5 : 6} 
-  stepValue={activeTab === 'daily' ? 100 : activeTab === 'weekly' ? 200 : 500} 
-  maxValue={activeTab === 'daily' ? 500 : activeTab === 'weekly' ? 1000 : 3000} 
-  width={Dimensions.get('window').width} // Use full screen width
-  hideRules={false}
-  rulesColor="lightgray"
-  showXAxisIndices
-  xAxisIndicesHeight={2}
-  xAxisIndicesColor="lightgray"
-/>
+              data={chartData}
+              barWidth={15}
+              spacing={15}
+              barBorderRadius={0}
+              yAxisThickness={1}
+              yAxisColor="gray"
+              yAxisTextStyle={{ color: 'gray', fontSize: 11 }}
+              xAxisThickness={1}
+              xAxisColor="gray"
+              xAxisLabelTextStyle={{
+                color: 'gray',
+                fontSize: 12,
+                textAlign: 'center',
+                flex: 1,
+              }}
+              noOfSections={activeTab === 'daily' ? 6 : activeTab === 'weekly' ? 5 : 6} 
+              stepValue={activeTab === 'daily' ? 100 : activeTab === 'weekly' ? 200 : 500} 
+              maxValue={activeTab === 'daily' ? 500 : activeTab === 'weekly' ? 1000 : 3000} 
+              width={Dimensions.get('window').width*0.8} 
+              hideRules={false}
+              rulesColor="lightgray"
+              showXAxisIndices
+              xAxisIndicesHeight={2}
+              xAxisIndicesColor="lightgray"
+            />
         </View>
 
           {/* Income & Expense Summary */}
@@ -464,7 +488,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   chartContainer: {
-    width: '95%', 
+    width: '92%', 
     alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 15,

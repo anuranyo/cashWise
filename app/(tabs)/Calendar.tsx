@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,27 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { fetchData } from '../services/api';
+
+type Transaction = {
+  transactionID: string;
+  userID: string;
+  categoryID: string;
+  type: string;
+  amount: string;
+  date: string;
+  description: string;
+};
+
+type Category = {
+  categoryID: string;
+  name: string;
+  icon: string;
+};
 
 const CalendarScreen = () => {
+  const { userID } = useLocalSearchParams();
   const [selectedDates, setSelectedDates] = useState<{
     startDate: string | null;
     endDate: string | null;
@@ -20,9 +38,30 @@ const CalendarScreen = () => {
     endDate: null,
   });
 
-  const [searchResults, setSearchResults] = useState<
-    { id: number; category: string; time: string; amount: number }[]
-  >([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [activeTab, setActiveTab] = useState<'spends' | 'categories'>('spends');
+
+  useEffect(() => {
+    const fetchTransactionsAndCategories = async () => {
+      try {
+        const fetchedTransactions: Transaction[] = await fetchData(
+          `transactions?userID=${userID}`
+        );
+        const fetchedCategories: Category[] = await fetchData(
+          `categories?userID=${userID}`
+        );
+
+        setTransactions(fetchedTransactions);
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchTransactionsAndCategories();
+  }, [userID]);
 
   const handleDateSelect = (day: { dateString: string }) => {
     const { startDate, endDate } = selectedDates;
@@ -84,12 +123,27 @@ const CalendarScreen = () => {
       return;
     }
 
-    const results: { id: number; category: string; time: string; amount: number }[] = [
-      { id: 1, category: 'Groceries', time: '17:00 - April 10', amount: -100 },
-      { id: 2, category: 'Payments', time: '10:00 - April 12', amount: 120 },
-    ];
+    const filtered = transactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.date);
+      return (
+        transactionDate >= new Date(startDate) && transactionDate <= new Date(endDate)
+      );
+    });
 
-    setSearchResults(results);
+    setFilteredTransactions(filtered);
+  };
+
+  const handleAnalysis = () => {
+    router.push({
+      pathname: `/Analysis`,
+      params: { userID: userID },
+    });
+  };
+  const handleNotification = () => {
+    router.push({
+      pathname: `/NotificationScreen`,
+      params: { userID: userID },
+    });
   };
 
   return(
@@ -97,12 +151,12 @@ const CalendarScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/Analysis')}>
+          <TouchableOpacity onPress={handleAnalysis}>
             <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Calendar</Text>
             <TouchableOpacity>
-              <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={() => router.push('./NotificationScreen')}/>
+              <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={handleNotification}/>
             </TouchableOpacity>
         </View>
 
@@ -115,30 +169,55 @@ const CalendarScreen = () => {
           />
         </View>
 
-        {/* Search Button */}
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Search</Text>
-        </TouchableOpacity>
-
-        {/* Search Results */}
-        <View style={styles.resultsContainer}>
-          {searchResults.map((result) => (
-            <View key={result.id} style={styles.resultItem}>
-              <View style={styles.resultCategory}>
-                <Text style={styles.resultCategoryText}>{result.category}</Text>
-                <Text style={styles.resultTimeText}>{result.time}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.resultAmount,
-                  { color: result.amount < 0 ? '#E63946' : '#2A9D8F' },
-                ]}
-              >
-                {result.amount < 0 ? '-' : '+'}${Math.abs(result.amount).toFixed(2)}
-              </Text>
-            </View>
-          ))}
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, activeTab === 'spends' && styles.activeButton]}
+            onPress={() => {
+              setActiveTab('spends');
+              handleSearch();
+            }}
+          >
+            <Text style={[styles.buttonText, activeTab === 'spends' && styles.activeButtonText]}>
+              Spends
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Transactions */}
+        {filteredTransactions.length > 0 && activeTab === 'spends' && (
+          <View style={styles.resultsContainer}>
+            {filteredTransactions.map((transaction) => {
+              const category = categories.find(
+                (cat) => cat.categoryID === transaction.categoryID
+              );
+
+              return (
+                <View key={transaction.transactionID} style={styles.resultItem}>
+                  <View style={styles.transactionDetails}>
+                    {category?.icon && (
+                      <FontAwesome5 name={category.icon} size={20} color="#006DFF" 
+                      />
+                    )}
+                    <View>
+                      <Text style={styles.resultCategoryText}>{transaction.description}</Text>
+                      <Text style={styles.resultTimeText}>{transaction.date}</Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.resultAmount,
+                      { color: transaction.type === 'income' ? '#2A9D8F' : '#E63946' },
+                    ]}
+                  >
+                    {transaction.type === 'income' ? '+' : '-'}$
+                    {Math.abs(parseFloat(transaction.amount)).toFixed(2)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
       </ScrollView>
 
@@ -196,18 +275,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
-  },
-  searchButton: {
-    backgroundColor: '#00C9A7',
+  },buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginHorizontal: 20,
     marginTop: 20,
+  },
+  button: {
+    flex: 1,
     padding: 15,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 5,
     borderRadius: 10,
     alignItems: 'center',
   },
-  searchButtonText: {
-    color: '#FFFFFF',
+  activeButton: {
+    backgroundColor: '#00C9A7',
+  },
+  buttonText: {
     fontSize: 16,
+    color: '#333333',
+  },
+  activeButtonText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   resultsContainer: {
@@ -215,6 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 15,
+    paddingBottom: 100, 
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
@@ -228,7 +319,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   resultCategory: {
-    flexDirection: 'column',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   resultCategoryText: {
     fontSize: 16,
@@ -242,6 +334,11 @@ const styles = StyleSheet.create({
   resultAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  transactionDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   navigation: {
     position: 'absolute',

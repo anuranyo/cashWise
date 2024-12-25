@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,44 +10,55 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { fetchData } from '../services/api';
+
+type Category = {
+    categoryID: string;
+    userID: string;
+    name: string;
+    description: string;
+    icon: string;
+  }
+  
+  type Transaction = {
+    transactionID: string;
+    userID: string;
+    categoryID: string;
+    type: string;
+    amount: string;
+    date: string;
+    description: string;
+  }
 
 const SearchScreen = () => {
-    const categories = [
-        { id: 1, name: 'Food', icon: 'utensils' },
-        { id: 2, name: 'Transport', icon: 'bus' },
-        { id: 3, name: 'Medicine', icon: 'pills' },
-        { id: 4, name: 'Groceries', icon: 'shopping-basket' },
-        { id: 5, name: 'Rent', icon: 'home' },
-        { id: 6, name: 'Gifts', icon: 'gift' },
-        { id: 7, name: 'Savings', icon: 'piggy-bank' },
-        { id: 8, name: 'Entertainment', icon: 'tv' },
-        { id: 9, name: 'More', icon: 'plus' },
-    ];
-
+    const { userID } = useLocalSearchParams();
+    const [fullName, setFullName] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('Select the category');
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const dropdownHeight = useRef(new Animated.Value(0)).current;
     const [selectedReport, setSelectedReport] = useState('Income');
     
-    const handleCategorySelect = (category) => {
+    useEffect(() => {
+        async function loadCategories() {
+          try {
+            const data = await fetchData(`categories?userID=${userID}`);
+            setCategories(data);
+          } catch (error) {
+            console.error('Error fetching categories:', error);
+          }
+        }
+    
+        loadCategories();
+    }, [userID]);
+      
+    const handleCategorySelect = (category: Category) => {
         setSelectedCategory(category.name);
+        setSelectedCategoryId(category.categoryID);
         toggleDropdown();
-    };
-
-    const [date, setDate] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
-
-    const handleDateChange = (event, selectedDate) => {
-        const currentDate = selectedDate || date;
-        setShowDatePicker(false);
-        setDate(currentDate);
-    };
-
-    const formatDate = (date) => {
-        const options = { day: '2-digit', month: 'short', year: 'numeric' };
-        return date.toLocaleDateString('en-GB', options).replace(/\s/g, '/');
     };
 
     const toggleDropdown = () => {
@@ -60,113 +71,153 @@ const SearchScreen = () => {
         } else {
           setDropdownVisible(true);
           Animated.timing(dropdownHeight, {
-            toValue: 200, 
+            toValue: 200,
             duration: 300,
             useNativeDriver: false,
           }).start();
         }
     };
-    
+
+    const handleSearch = async () => {
+        try {
+          const data = await fetchData(`transactions?userID=${userID}`);
+          const filteredTransactions = data.filter(
+            (transaction: Transaction) =>
+              transaction.categoryID === selectedCategoryId &&
+              transaction.type.toLowerCase() === selectedReport.toLowerCase()
+          );
+          setTransactions(filteredTransactions);
+        } catch (error) {
+          console.error('Error fetching transactions:', error);
+        }
+    };
+
+    const handleAnalysis = () => {
+        router.push({
+          pathname: `/Analysis`,
+          params: { userID: userID },
+        });
+    };
+    const handleNotification = () => {
+        router.push({
+        pathname: `/NotificationScreen`,
+        params: { userID: userID },
+        });
+    };
 
     return(
-    <View style={styles.container}>
+        <View style={styles.container}>
         <ScrollView style={styles.scrollView}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/Analysis')}>
-                    <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Search</Text>
-                <TouchableOpacity>
-                    <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Dropdown */}
-            <View style={styles.dropdownContainer}>
-                <TouchableOpacity style={styles.dropdown} onPress={toggleDropdown}>
-                    <Text style={styles.dropdownText}>{selectedCategory}</Text>
-                    <FontAwesome5
-                        name={dropdownVisible ? 'chevron-up' : 'chevron-down'}
-                        size={16}
-                        color="#00C9A7"
-                    />
-                </TouchableOpacity>
-
-            {/* Dropdown Menu */}
-            {dropdownVisible && (
-                <Animated.View style={[styles.dropdownMenu, { height: dropdownHeight }]}>
-                    <FlatList
-                    data={categories}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.dropdownItem}
-                        onPress={() => handleCategorySelect(item)}
-                        >
-                        <FontAwesome5 name={item.icon} size={20} color="#006DFF" />
-                        <Text style={styles.dropdownItemText}>{item.name}</Text>
-                    </TouchableOpacity>
-                    )}
-                    />
-                </Animated.View>
-             )}
-            </View>
-
-            {/* Date Picker */}
-            <View style={styles.datePickerContainer}>
-                <TouchableOpacity
-                style={styles.datePicker}
-                onPress={() => setShowDatePicker(true)}
-                >
-                <Text style={styles.datePickerText}>{formatDate(date)}</Text>
-                <FontAwesome5 name="calendar-alt" size={20} color="#00C9A7" />
-                </TouchableOpacity>
-            </View>
-
-            {showDatePicker && (
-                <DateTimePicker
-                    value={date}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                />
-            )}
-
-            {/* Report Section */}
-            <View style={styles.reportSection}>
-                <Text style={styles.reportLabel}>Report</Text>
-                <View style={styles.reportOptions}>
-                    <TouchableOpacity
-                        style={styles.radioButton}
-                        onPress={() => setSelectedReport('Income')}
-                    >
-                    <FontAwesome5
-                        name={selectedReport === 'Income' ? 'dot-circle' : 'circle'}
-                        size={16}
-                        color="#00C9A7"
-                    />
-                    <Text style={styles.radioText}>Income</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.radioButton}
-                        onPress={() => setSelectedReport('Expense')}
-                    >
-                    <FontAwesome5
-                        name={selectedReport === 'Expense' ? 'dot-circle' : 'circle'}
-                        size={16}
-                        color="#00C9A7"
-                    />
-                    <Text style={styles.radioText}>Expense</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Search Button */}
-            <TouchableOpacity style={styles.searchButton}>
-                <Text style={styles.searchButtonText}>Search</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleAnalysis}>
+              <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
             </TouchableOpacity>
+            <Text style={styles.headerTitle}>Search</Text>
+            <TouchableOpacity>
+              <FontAwesome5 name="bell" size={20} color="#FFFFFF" onPress={handleNotification}/>
+            </TouchableOpacity>
+          </View>
 
+        {/* Dropdown */}
+        <View style={styles.dropdownContainer}>
+          <TouchableOpacity style={styles.dropdown} onPress={toggleDropdown}>
+            <Text style={styles.dropdownText}>{selectedCategory}</Text>
+            <FontAwesome5
+              name={dropdownVisible ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color="#00C9A7"
+            />
+          </TouchableOpacity>
+
+          {dropdownVisible && (
+            <Animated.View style={[styles.dropdownMenu, { height: dropdownHeight }]}>
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item.categoryID.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => handleCategorySelect(item)}
+                  >
+                    <FontAwesome5 name={item.icon} size={20} color="#006DFF" />
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </Animated.View>
+          )}
+        </View>
+
+         {/* Report Section */}
+         <View style={styles.reportSection}>
+          <Text style={styles.reportLabel}>Report</Text>
+          <View style={styles.reportOptions}>
+            <TouchableOpacity
+              style={styles.radioButton}
+              onPress={() => setSelectedReport('Income')}
+            >
+              <FontAwesome5
+                name={selectedReport === 'Income' ? 'dot-circle' : 'circle'}
+                size={16}
+                color="#00C9A7"
+              />
+              <Text style={styles.radioText}>Income</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.radioButton}
+              onPress={() => setSelectedReport('Expense')}
+            >
+              <FontAwesome5
+                name={selectedReport === 'Expense' ? 'dot-circle' : 'circle'}
+                size={16}
+                color="#00C9A7"
+              />
+              <Text style={styles.radioText}>Expense</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Search Button */}
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <Text style={styles.searchButtonText}>Search</Text>
+        </TouchableOpacity>
+
+        {/* Transactions List */}
+        {transactions.length > 0 && (
+          <View style={styles.transactionsContainer}>
+            <Text style={styles.transactionsTitle}>Transactions</Text>
+            {transactions.map((transaction) => {
+              const category = categories.find(
+                (cat) => cat.categoryID === transaction.categoryID
+              );
+
+              return (
+                <View key={transaction.transactionID} style={styles.transactionItem}>
+                  <View style={styles.transactionDetails}>
+                    {category?.icon && (
+                      <FontAwesome5 name={category.icon} size={20} color="#006DFF" />
+                    )}
+                    <Text style={styles.transactionDescription}>
+                      {transaction.description}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        styles.transactionAmount,
+                        { color: transaction.type === 'income' ? 'green' : 'red' },
+                      ]}
+                    >
+                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount}
+                    </Text>
+                    <Text style={styles.transactionDate}>{transaction.date}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
         </ScrollView>
 
       {/* Navigation Menu */}
@@ -314,6 +365,55 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    transactionsContainer: {
+        marginHorizontal: 20,
+        marginTop: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        padding: 15,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
+      },
+      transactionsTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 10,
+      },
+      transactionItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EAEAEA',
+      },
+      transactionDescription: {
+        fontSize: 16,
+        color: '#333',
+        flex: 2,
+      },
+      transactionAmount: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        flex: 1,
+        textAlign: 'right',
+      },
+      transactionDate: {
+        fontSize: 14,
+        color: '#7D7D7D',
+        flex: 1,
+        textAlign: 'right',
+      },
+      transactionDetails: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+      },
     navigation: {
       position: 'absolute',
       bottom: 0,
