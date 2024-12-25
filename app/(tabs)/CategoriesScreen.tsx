@@ -1,45 +1,80 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import { useTabContext } from '../contexts/TabContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchData } from '../services/api';
 
-const categoriesData = [
-  { id: '1', icon: 'utensils', name: 'Food' },
-  { id: '2', icon: 'bus', name: 'Transport' },
-  { id: '3', icon: 'pills', name: 'Medicine' },
-  { id: '4', icon: 'shopping-basket', name: 'Groceries' },
-  { id: '5', icon: 'home', name: 'Rent' },
-  { id: '6', icon: 'gift', name: 'Gifts' },
-  { id: '7', icon: 'piggy-bank', name: 'Savings' },
-  { id: '8', icon: 'ticket-alt', name: 'Entertainment' },
-  { id: '9', icon: 'plus', name: 'More' },
-];
+// Define the type for the category
+type Category = {
+  categoryID: number;
+  userID: number;
+  name: string;
+  description: string;
+  icon: string; // Add the icon property
+};
 
 const CategoriesScreen = () => {
   const router = useRouter();
+  const { activeTab, setActiveTab } = useTabContext();
+  const [userID, setUserID] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCategoryPress = (category: { id: string; name: string }) => {
-    if (category.id === '9') {
-      // Navigate to CategoryDetailScreen for the "More" category
-      router.push({
-        pathname: '/(tabs)/CategoryDetailScreen',
-        params: { categoryId: category.id, categoryName: category.name },
-      });
-    } else {
-      // Navigate to AddExpenseScreen for other categories
-      router.push({
-        pathname: '/(tabs)/AddExpenseScreen',
-        params: { categoryId: category.id, categoryName: category.name },
-      });
+  useEffect(() => {
+    const fetchUserID = async () => {
+      const storedUserID = await AsyncStorage.getItem('userID');
+      setUserID(storedUserID);
+    };
+    fetchUserID();
+  }, []);
+
+  useEffect(() => {
+    if (userID) {
+      const fetchCategories = async () => {
+        try {
+          const response = await fetchData(`/categories?userID=${userID}`);
+          setCategories(response); // Directly set categories from the response
+        } catch (error) {
+          console.error('Error fetching categories:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCategories();
     }
+  }, [userID]);
+
+  const handleCategoryPress = (category: Category) => {
+    router.push({
+      pathname: '/(tabs)/AddExpenseScreen',
+      params: { categoryId: category.categoryID, categoryName: category.name, userID: userID },
+    });
   };
+
+  const handleAddCategory = () => {
+    router.push({
+      pathname: '/(tabs)/CategoryDetailScreen',
+      params: { userID: userID },
+    });
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#00C9A7" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -56,8 +91,8 @@ const CategoriesScreen = () => {
 
       {/* Categories Grid */}
       <FlatList
-        data={categoriesData}
-        keyExtractor={(item) => item.id}
+        data={categories}
+        keyExtractor={(item) => item.categoryID.toString()}
         numColumns={3}
         contentContainerStyle={styles.categoriesGrid}
         renderItem={({ item }) => (
@@ -66,12 +101,24 @@ const CategoriesScreen = () => {
             onPress={() => handleCategoryPress(item)}
           >
             <View style={styles.categoryIcon}>
-              <FontAwesome5 name={item.icon} size={24} color="#FFFFFF" />
+              <FontAwesome5
+                name={item.icon || 'question-circle'} // Dynamically use the icon from the database
+                size={24}
+                color="#FFFFFF"
+              />
             </View>
             <Text style={styles.categoryName}>{item.name}</Text>
           </TouchableOpacity>
         )}
       />
+
+      {/* Add Category Button */}
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAddCategory}
+      >
+        <FontAwesome5 name="plus" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
 
       {/* Bottom Navigation */}
       <BottomNavigation />
@@ -80,6 +127,12 @@ const CategoriesScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
   header: {
     backgroundColor: '#00C9A7',
     paddingVertical: 20,
@@ -117,6 +170,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333333',
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    backgroundColor: '#00C9A7',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 5,
   },
 });
 

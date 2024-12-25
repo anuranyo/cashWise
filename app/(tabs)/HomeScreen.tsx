@@ -29,6 +29,7 @@ const HomeScreen = () => {
   const { userID } = useLocalSearchParams(); // Getting userID from parameters
   const [fullName, setFullName] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactionsByID, setTransactionsByID] = useState<Transaction[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
   const [goal, setGoal] = useState({
@@ -39,6 +40,8 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
   const today = new Date().toISOString().split('T')[0];
+
+
 
   useEffect(() => {
     const fetchServerData = async () => {
@@ -78,22 +81,59 @@ const HomeScreen = () => {
             },
           }
         );
-  
-        console.log('Transactions response:', transactionsResponse);
-  
+
+        console.error('Invalid user response:', transactionsResponse);
+
         if (Array.isArray(transactionsResponse)) {
-          const formattedTransactions = transactionsResponse.map((t: any) => ({
-            id: t.transactionID.toString(),
-            userID: t.userID.toString(),
-            icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
-            name: t.description,
-            time: new Date(t.date).toLocaleString(), // Format date
-            category: t.categoryID.toString(),
-            amount: `$${t.amount.toFixed(2)}`, // Format amount
-            type: t.type,
-          }));
+          // Process each transaction
+          const formattedTransactions = await Promise.all(
+            transactionsResponse.map(async (t: any) => {
+              let categoryResponse;
+
+              try {
+                // Fetch category data
+                categoryResponse = await fetchData(
+                  `get/category?userID=${userID}&categoryID=${t.categoryID}`,
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'ngrok-skip-browser-warning': 'true',
+                    },
+                  }
+                );
+                console.log("categoryResponse:", JSON.stringify(categoryResponse, null, 2));
+              } catch (error) {
+                console.error(`Failed to fetch category for transactionID ${t.transactionID}:`, error);
+              }
+
+
+              // Return formatted transaction
+              return {
+                id: t.transactionID.toString(),
+                userID: t.userID.toString(),
+                icon: t.type === 'goal' ? 'star' : categoryResponse?.icon || 'shopping-cart',
+                name: t.type === 'goal'
+                  ? t.description
+                  : categoryResponse?.description || t.description,
+                time: new Date(t.date).toLocaleString(),
+                category: t.categoryID?.toString() || 'Uncategorized',
+                amount: `$${t.amount.toFixed(2)}`,
+                type: t.type,
+              };
+            })
+          );
+
+          // Set formatted transactions in state
           setTransactions(formattedTransactions);
+
+          // Debug formatted transactions
+          console.log('Formatted Transactions:', JSON.stringify(formattedTransactions, null, 2));
+        } else {
+          console.error('Unexpected response format:', transactionsResponse);
         }
+
+        
   
         // Fetch total income
         const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
@@ -183,6 +223,61 @@ const HomeScreen = () => {
         }
 
 
+        
+        // Fetch All Transactions By UserID
+        const transactionsByIDResponse = await fetchData(
+          `/transactions?userID=${userID}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
+
+        console.log('Transactions response:', transactionsByIDResponse);
+  
+        if (Array.isArray(transactionsByIDResponse)) {
+          const formattedTransactionsBID = await Promise.all(
+            transactionsByIDResponse.map(async (t: any) => {
+              // Fetch category data dynamically for each transaction
+              let categoryResponse;
+              try {
+                categoryResponse = await fetchData(
+                  `get/category?userID=${userID}&categoryID=${t.categoryID}`,
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'ngrok-skip-browser-warning': 'true',
+                    },
+                  }
+                );
+              } catch (error) {
+                console.error(`Error fetching category for categoryID ${t.categoryID}:`, error);
+              }
+        
+              // Return formatted transaction object with dynamic category data
+              return {
+                id: t.transactionID.toString(),
+                userID: t.userID.toString(),
+                icon: categoryResponse?.icon || 'shopping-cart',
+                name: categoryResponse?.description || t.description,
+                time: new Date(t.date).toLocaleString(), 
+                category: t.categoryID.toString(),
+                amount: `$${t.amount.toFixed(2)}`,
+                type: t.type,
+              };
+            })
+          );
+          setTransactionsByID(formattedTransactionsBID);
+        }
+        
+
+
+        
+
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -202,7 +297,7 @@ const HomeScreen = () => {
     );
   }
   
-  //const totalBalance = totalIncome - totalExpense;
+  const totalBalance = totalIncome - totalExpense;
 
   return (
     <View style={styles.container}>
@@ -223,7 +318,16 @@ const HomeScreen = () => {
         {/* Balance */}
         <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.balanceLabel}>Total Balance per Month</Text>
+            <Text style={styles.incomeAmount}>${totalBalance.toFixed(2)}</Text>
+          </View>
+          <View style={styles.divider} />
+        </View>
+
+        {/* Balance */}
+        <View style={styles.balanceContainer}>
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLabel}>Total Income</Text>
             <Text style={styles.incomeAmount}>${totalIncome.toFixed(2)}</Text>
           </View>
           <View style={styles.divider} />
@@ -267,14 +371,14 @@ const HomeScreen = () => {
         {/* Transactions */}
         <FlatList
           data={transactions}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`} 
           renderItem={({ item }) => (
             <View style={styles.transactionItem}>
-              <FontAwesome5
-                name={item.icon}
-                size={24}
-                color={item.type === 'income' ? '#00D699' : '#FF5252'}
-              />
+            <FontAwesome5
+              name={item.icon} 
+              size={24}
+              color={item.type === 'income' ? '#00D699' : '#FF5252'}
+            />
               <View style={styles.transactionDetails}>
                 <Text style={styles.transactionName}>{item.name}</Text>
                 <Text style={styles.transactionTime}>{item.time}</Text>
@@ -290,6 +394,41 @@ const HomeScreen = () => {
             </View>
           )}
         />
+
+
+       {/* Get All Transactions */}
+        <Text style={styles.revenueLabelAllTransactions}>All Transactions</Text>
+        <FlatList
+          data={transactionsByID}
+          keyExtractor={(item, index) => `${item.id}-${index}`} // Combine `id` and `index` for uniqueness
+          renderItem={({ item }) => (
+            <View style={styles.transactionItem}>
+              <View style={styles.iconContainer}>
+                <FontAwesome5
+                  name={item.icon}
+                  size={24}
+                  color={item.type === 'income' ? '#00D699' : '#FF5252'}
+                />
+              </View>
+              <View style={styles.detailsContainer}>
+                <Text style={styles.transactionName}>{item.name}</Text>
+                <Text style={styles.transactionTime}>{item.time}</Text>
+              </View>
+              <View style={styles.amountContainer}>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    item.type === 'income' ? styles.incomeAmount : styles.expenseAmount,
+                  ]}
+                >
+                  {item.amount}
+                </Text>
+              </View>
+            </View>
+          )}
+          contentContainerStyle={styles.transactionListContainer}
+        />
+
       </ScrollView>
       <BottomNavigation />
     </View>
@@ -439,8 +578,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   revenueLabel: {
-    fontSize: 16,
+    fontSize: 25,
     fontWeight: '600',
+    color: '#333333',
+  },
+  revenueLabelAllTransactions: {
+    fontSize: 20,
+    marginLeft: 25,
+    marginTop: 25,
+    fontWeight: 'bold',
     color: '#333333',
   },
   revenueAmount: {
@@ -448,6 +594,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginTop: 5,
+  },
+  iconContainer: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsContainer: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  amountContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  transactionListContainer: {
+    paddingVertical: 10,
   },
 });
 

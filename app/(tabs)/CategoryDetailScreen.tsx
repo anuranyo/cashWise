@@ -1,18 +1,146 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { fetchData } from '../services/api';
+
+const excludedIcons = [
+  'coffee',
+  'car',
+  'apple-alt',
+  'camera',
+  'beer',
+  'music',
+  'leaf',
+  'plane',
+  'book',
+  'bicycle',
+  'motorcycle',
+  'fish',
+  'dog',
+  'cat',
+  'heart',
+  'star',
+  'gift',
+  'shopping-cart',
+  'umbrella',
+  'fire',
+  'tree',
+  'couch',
+  'bed',
+  'dumbbell',
+  'pizza-slice',
+  'hamburger',
+  'cheese',
+  'ice-cream',
+  'wine-glass',
+  'cocktail',
+  'mobile-alt',
+  'tablet-alt',
+  'laptop',
+  'desktop',
+  'headphones',
+  'watch',
+  'camera-retro',
+  'basketball-ball',
+  'football-ball',
+  'volleyball-ball',
+  'baseball-ball',
+  'chess',
+  'dice',
+  'gamepad',
+  'pen',
+  'paint-brush',
+  'palette',
+  'scissors',
+  'briefcase',
+  'clock',
+  'map',
+  'compass',
+  'calculator',
+  'key',
+  'lock',
+  'lightbulb',
+  'clipboard',
+  'paper-plane',
+  'envelope',
+  'trash-alt',
+  'archive',
+  'globe',
+];
+
+// Generate a random icon excluding the provided list
+const getRandomIcon = () => {
+  const allIcons = [
+    'utensils', 'bus', 'pills', 'shopping-basket', 'home', 'gift', 'piggy-bank', 'ticket-alt',
+    'coffee', 'car', 'apple-alt', 'camera', 'beer', 'music', 'leaf', 'plane', 'book', 'bicycle',
+    'motorcycle', 'fish', 'dog', 'cat', 'heart', 'star', 'shopping-cart', 'umbrella', 'tree',
+    'couch', 'bed', 'dumbbell', 'pizza-slice', 'hamburger', 'cheese', 'ice-cream', 'wine-glass',
+    'cocktail', 'mobile-alt', 'tablet-alt', 'laptop', 'desktop', 'headphones', 'watch',
+    'camera-retro', 'basketball-ball', 'football-ball', 'volleyball-ball', 'baseball-ball',
+    'chess', 'dice', 'gamepad', 'pen', 'paint-brush', 'palette', 'scissors', 'briefcase',
+    'clock', 'map', 'compass', 'calculator', 'key', 'lock', 'lightbulb', 'clipboard', 'globe',
+  ]; // A comprehensive list of valid FontAwesome5 icons
+
+  // Filter out excluded icons
+  const filteredIcons = allIcons.filter((icon) => !excludedIcons.includes(icon));
+  return filteredIcons[Math.floor(Math.random() * filteredIcons.length)];
+};
 
 const CategoryDetailScreen = () => {
   const router = useRouter();
-  const { categoryId, categoryName } = useLocalSearchParams();
+  const { userID } = useLocalSearchParams(); // Getting userID from parameters
 
-  // Ensure categoryName and categoryId are strings
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState('utensils');
+  const [name, setName] = useState('');
+  const [description, setDesc] = useState('');
+  const [icon, setIcon] = useState(getRandomIcon()); // Default random icon
   const [color, setColor] = useState('#1A73E8');
   const [budget, setBudget] = useState('');
 
+  const handleSaveCategory = async () => {
+    if (!name.trim()) {
+      Alert.alert('Validation Error', 'Category name cannot be empty');
+      return;
+    }
+  
+    if (!description.trim()) {
+      Alert.alert('Validation Error', 'Category description cannot be empty');
+      return;
+    }
+  
+    const payload = {
+      name,
+      description,
+      userID: parseInt(userID as string, 10),
+      icon,
+    };
+  
+    console.log('Payload being sent:', JSON.stringify(payload, null, 2));
+  
+    try {
+      const data = await fetchData('create-category', {
+        method: 'POST',
+        body: JSON.stringify(payload),            
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+  
+      // If fetchData returns without error, assume category was created
+      console.log('Category created successfully:', data);
+  
+      router.push({
+        pathname: '/CategoriesScreen',
+        params: { userID }, 
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      Alert.alert('Error', 'Failed to create category. Please try again later.');
+    }
+  };
+
+  
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -28,70 +156,45 @@ const CategoryDetailScreen = () => {
       <View style={styles.content}>
         {/* Category Name Input */}
         <View style={styles.inputGroup}>
-            <Text style={styles.label}>Category Name</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Enter category name"
-                value={name}
-                onChangeText={(text) => setName(text)}
-                placeholderTextColor="#7D7D7D"
-            />
-        </View>
-
-        {/* Icon Selection */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category Icon</Text>
-          <View style={styles.iconOptions}>
-            {['utensils', 'bus', 'pills', 'shopping-basket', 'home', 'gift', 'piggy-bank', 'ticket-alt'].map(
-              (iconOption) => (
-                <TouchableOpacity
-                  key={iconOption}
-                  onPress={() => setIcon(iconOption)}
-                  style={[
-                    styles.iconOption,
-                    icon === iconOption && { borderColor: color, borderWidth: 2 },
-                  ]}
-                >
-                  <FontAwesome5 name={iconOption} size={24} color={icon === iconOption ? color : '#7D7D7D'} />
-                </TouchableOpacity>
-              )
-            )}
-          </View>
-        </View>
-
-        {/* Color Picker */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category Color</Text>
-          <View style={styles.colorOptions}>
-            {['#1A73E8', '#00C9A7', '#FF5252', '#F4B400', '#9C27B0'].map((colorOption) => (
-              <TouchableOpacity
-                key={colorOption}
-                onPress={() => setColor(colorOption)}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: colorOption },
-                  color === colorOption && styles.selectedColorOption,
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Budget Input */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Monthly Budget ($)</Text>
+          <Text style={styles.label}>Category Name</Text>
           <TextInput
             style={styles.input}
-            value={budget}
-            onChangeText={setBudget}
-            placeholder="Enter budget"
+            placeholder="Enter category name"
+            value={name}
+            onChangeText={(text) => setName(text)}
             placeholderTextColor="#7D7D7D"
-            keyboardType="numeric"
           />
         </View>
 
+        {/* Category Name Input */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter category Description"
+            value={description}
+            onChangeText={(text) => setDesc(text)}
+            placeholderTextColor="#7D7D7D"
+          />
+        </View>
+
+        {/* Icon Preview */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Category Icon</Text>
+          <View style={styles.iconPreview}>
+            <FontAwesome5 name={icon} size={48} color={color} />
+          </View>
+          <TouchableOpacity
+            style={styles.changeIconButton}
+            onPress={() => setIcon(getRandomIcon())}
+          >
+            <Text style={styles.changeIconText}>Change Icon</Text>
+          </TouchableOpacity>
+        </View>
+
+
         {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={() => alert('Category saved successfully!')}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveCategory}>
           <Text style={styles.saveButtonText}>Save Category</Text>
         </TouchableOpacity>
       </View>
@@ -144,37 +247,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  iconOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  iconOption: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+  iconPreview: {
     alignItems: 'center',
-    margin: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  colorOptions: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginHorizontal: 5,
-  },
-  selectedColorOption: {
-    borderWidth: 3,
-    borderColor: '#333333',
+    justifyContent: 'center',
+    marginVertical: 20,
   },
   saveButton: {
     backgroundColor: '#00C9A7',
@@ -188,6 +264,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  changeIconButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#00C9A7',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  changeIconText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  
 });
 
 export default CategoryDetailScreen;
