@@ -25,7 +25,7 @@ const EditProfileScreen = () => {
   });
   const [loading, setLoading] = useState(true);
   const [darkTheme, setDarkTheme] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(false);
+  const [notifications, setNotifications] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -47,6 +47,8 @@ const EditProfileScreen = () => {
             email: response.email || '',
             profilePicture: response.profilePicture || '',
           });
+          setDarkTheme(response.darkTheme || false); // Установка darkTheme из ответа
+          setNotifications(response.notification || false); // Установка pushNotifications из ответа
         } else {
           console.error('Error fetching user data:', response);
         }
@@ -62,45 +64,62 @@ const EditProfileScreen = () => {
 
   const toggleDarkTheme = async () => {
     try {
-      setDarkTheme(!darkTheme);
-      await fetchData(
-        `/settings/toggle-dark-theme?userID=${userID}`,
+      const newTheme = !darkTheme;
+      setDarkTheme(newTheme);
+
+      const response = await fetchData(
+        `settings/toggle-dark-theme?userID=${userID}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',
           },
+          body: JSON.stringify({ darkTheme: newTheme }),
         }
       );
-      Alert.alert('Успех', 'Тема успешно переключена!');
+
+      if (response) {
+        Alert.alert('Успех', 'Тема успешно переключена!');
+      } else {
+        throw new Error('Ответ сервера пуст');
+      }
     } catch (error) {
       console.error('Ошибка при переключении темы:', error);
       Alert.alert('Ошибка', 'Не удалось переключить тему.');
-      setDarkTheme(!darkTheme); 
     }
   };
 
   const toggleNotifications = async () => {
     try {
-      setPushNotifications(!pushNotifications);
-      await fetchData(
-        `/settings/notification?userID=${userID}`,
+      const newNotificationStatus = !notifications; // Переключаем локально
+      setNotifications(newNotificationStatus); // Обновляем локальное состояние
+  
+      const response = await fetchData(
+        `settings/notification?userID=${userID}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',
           },
+          body: JSON.stringify({ notification: newNotificationStatus }),
         }
       );
-      Alert.alert('Успех', 'Настройки уведомлений обновлены!');
+  
+      if (response) {
+        console.log('POST response: Мыу пщщщв', response); // Логируем ответ на POST запрос
+
+      } else {
+        throw new Error('Ответ сервера пуст');
+      }
     } catch (error) {
       console.error('Ошибка при переключении уведомлений:', error);
       Alert.alert('Ошибка', 'Не удалось обновить настройки уведомлений.');
-      setPushNotifications(!pushNotifications); // Возвращаем обратно в случае ошибки
     }
-  }
+  };
+  
+  
 
   const handleUpdateProfile = async () => {
     try {
@@ -154,10 +173,6 @@ const EditProfileScreen = () => {
     }
     
   };
-  
-  
-  
-  
 
   if (loading) {
     return (
@@ -170,7 +185,6 @@ const EditProfileScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push({ pathname: '/ProfileScreen', params: { userID } })}>
           <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
@@ -181,7 +195,6 @@ const EditProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Profile Details */}
       <View style={styles.profileContainer}>
         <View style={styles.profileImageWrapper}>
           <Image
@@ -189,24 +202,10 @@ const EditProfileScreen = () => {
               uri: user.profilePicture || 'https://via.placeholder.com/150',
             }}
             style={styles.profileImage}
-            onError={() =>
-              setUser((prevUser) => ({
-                ...prevUser,
-                profilePicture: 'https://via.placeholder.com/150',
-              }))
-            }
           />
-          <TouchableOpacity style={styles.editIcon}>
-            <FontAwesome5 name="camera" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
         <Text style={styles.profileName}>{user.fullName || 'Unknown User'}</Text>
-        <Text style={styles.profileId}>ID: {userID}</Text>
       </View>
-
-      {/* Account Settings */}
-      <View style={styles.accountSettings}>
-        <Text style={styles.settingsHeader}>Account Settings</Text>
 
         {/* Full Name */}
         <View style={styles.inputGroup}>
@@ -233,7 +232,8 @@ const EditProfileScreen = () => {
           />
         </View>
 
-        {/* Dark Theme */}
+
+      <View style={styles.accountSettings}>
         <View style={styles.toggleGroup}>
           <Text style={styles.toggleLabel}>Dark Theme</Text>
           <Switch
@@ -244,28 +244,24 @@ const EditProfileScreen = () => {
           />
         </View>
 
-        {/* Push Notifications */}
         <View style={styles.toggleGroup}>
           <Text style={styles.toggleLabel}>Notifications</Text>
           <Switch
-            value={pushNotifications}
+            value={notifications} // Используем правильное имя переменной
             onValueChange={toggleNotifications}
-            thumbColor={pushNotifications ? '#00C9A7' : '#E8E8E8'}
+            thumbColor={notifications ? '#00C9A7' : '#E8E8E8'}
             trackColor={{ false: '#E8E8E8', true: '#00C9A7' }}
           />
         </View>
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={styles.updateButton}
-          onPress={handleUpdateProfile}
-        >
+        <TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
           <Text style={styles.updateButtonText}>Save Changes</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   header: {
@@ -328,7 +324,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   inputGroup: {
-    marginBottom: 15,
+    margin: 15,
   },
   label: {
     fontSize: 14,
