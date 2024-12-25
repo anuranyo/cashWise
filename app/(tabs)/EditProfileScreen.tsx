@@ -103,13 +103,31 @@ const EditProfileScreen = () => {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',
           },
-          body: JSON.stringify({ notification: newNotificationStatus }),
+          body: JSON.stringify({ notifications: newNotificationStatus }),
         }
       );
   
       if (response) {
-        console.log('POST response: Мыу пщщщв', response); // Логируем ответ на POST запрос
-
+        console.log('POST response:', response); // Логируем ответ на POST запрос
+  
+        // Запрашиваем обновлённое состояние с сервера
+        const updatedData = await fetchData(`/getUserAndSettings?userID=${userID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+  
+        console.log('GET response:', updatedData); // Логируем ответ на GET запрос
+  
+        if (updatedData.notification !== undefined) {
+          setNotifications(updatedData.notification); // Синхронизируем состояние
+          Alert.alert('Успех', 'Настройки уведомлений обновлены!');
+        } else {
+          console.error('Поле notification отсутствует в ответе:', updatedData);
+          throw new Error('Обновлённые данные не получены');
+        }
       } else {
         throw new Error('Ответ сервера пуст');
       }
@@ -135,7 +153,6 @@ const EditProfileScreen = () => {
       const updatePromises: Promise<void>[] = [];
   
       const fullNameData = JSON.stringify({ fullName: fullName.trim() });
-      console.log('Отправляемые данные для имени:', fullNameData);
       updatePromises.push(
         fetchData(`update-user?userID=${userID}`, {
           method: 'PUT',
