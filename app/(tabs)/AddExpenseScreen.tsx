@@ -29,9 +29,47 @@ const AddExpenseScreen = () => {
     }
   };
 
+
   const handleSave = async () => {
-    if (!amount || !expenseTitle) {
+    if (!amount || !expenseTitle || !categoryName) {
       Alert.alert('Validation Error', 'Please enter all required fields.');
+      return;
+    }
+
+    let categoryID = null;
+
+    console.log('categoryName:', categoryName);
+
+    try {
+      // Fetch category ID by name
+      try {
+        // Fetch category ID by name
+        const categoryResponse = await fetchData(`category?name=${categoryName}`, {
+          method: 'GET',
+        });
+      
+        console.log('Category Response:', categoryResponse);
+      
+        // Ensure categoryResponse is not empty
+        if (Array.isArray(categoryResponse) && categoryResponse.length > 0) {
+          categoryID = categoryResponse[0].categoryID; // Access the first item
+          console.log("CategoryID " + categoryID);
+        } else {
+          console.warn('No category found with the given name.');
+          Alert.alert('Validation Error', 'Category not found. Please check the category name.');
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching category by name:', error);
+        Alert.alert('Error', 'Failed to fetch category. Please try again.');
+        return;
+      }
+
+      console.log("CategoryID " + categoryID)
+
+    } catch (error) {
+      console.error('Error fetching category by name:', error);
+      Alert.alert('Error', 'Failed to fetch category. Please try again.');
       return;
     }
 
@@ -39,30 +77,29 @@ const AddExpenseScreen = () => {
       description: expenseTitle,
       date: date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
       amount: parseFloat(amount),
-      category: categoryName,
+      categoryID: categoryID,
       type: transactionType,
     };
 
-    try {
-      const response = await fetchData(`transaction?userID=${userID}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionData),
-      });
+    console.log('Transaction Data:', transactionData);
 
-      if (response.ok) {
-        Alert.alert('Success', 'Transaction saved successfully!');
-        router.back(); // Go back to the previous screen
-      } else {
-        Alert.alert('Error', 'Failed to save transaction. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      Alert.alert('Error', 'Failed to save transaction. Please try again.');
+    const response = await fetchData(`transaction?userID=${userID}`, {
+      method: 'POST',
+      body: JSON.stringify(transactionData),
+    });
+
+    console.log('Transaction Save Response:', response);
+
+    if (response) {
+      Alert.alert('Success', 'Transaction saved successfully!');
+      router.back();
+    } else {
+      throw new Error('Failed to save transaction.');
     }
+
   };
+  
+  
 
   return (
     <View style={styles.container}>

@@ -40,17 +40,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
   const today = new Date().toISOString().split('T')[0];
-  const categoriesData = [
-    { id: '1', icon: 'utensils', name: 'Food' },
-    { id: '2', icon: 'bus', name: 'Transport' },
-    { id: '3', icon: 'pills', name: 'Medicine' },
-    { id: '4', icon: 'shopping-basket', name: 'Groceries' },
-    { id: '5', icon: 'home', name: 'Rent' },
-    { id: '6', icon: 'gift', name: 'Gifts' },
-    { id: '7', icon: 'piggy-bank', name: 'Savings' },
-    { id: '8', icon: 'ticket-alt', name: 'Entertainment' },
-    { id: '9', icon: 'plus', name: 'More' },
-  ];
+
 
 
   useEffect(() => {
@@ -91,31 +81,58 @@ const HomeScreen = () => {
             },
           }
         );
-  
-        console.log('Transactions response:', transactionsResponse);
-  
+
+        console.error('Invalid user response:', transactionsResponse);
+
         if (Array.isArray(transactionsResponse)) {
-          const formattedTransactions = transactionsResponse.map((t: any) => {
-            const category = categoriesData.find(cat => cat.id === t.categoryID.toString());
-        
-            return {
-              id: t.transactionID.toString(),
-              userID: t.userID.toString(),
-              icon: t.type === 'income' 
-                    ? 'money-bill-wave' 
-                    : t.type === 'goal' 
-                      ? 'star' 
-                      : category?.icon || 'shopping-cart', // Использовать найденную иконку или дефолтную
-              name: t.description,
-              time: new Date(t.date).toLocaleString(), // Форматировать дату
-              category: t.categoryID.toString(),
-              amount: `$${t.amount.toFixed(2)}`, // Форматировать сумму
-              type: t.type,
-            };
-          });
-        
+          // Process each transaction
+          const formattedTransactions = await Promise.all(
+            transactionsResponse.map(async (t: any) => {
+              let categoryResponse;
+
+              try {
+                // Fetch category data
+                categoryResponse = await fetchData(
+                  `get/category?userID=${userID}&categoryID=${t.categoryID}`,
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'ngrok-skip-browser-warning': 'true',
+                    },
+                  }
+                );
+                console.log("categoryResponse:", JSON.stringify(categoryResponse, null, 2));
+              } catch (error) {
+                console.error(`Failed to fetch category for transactionID ${t.transactionID}:`, error);
+              }
+
+
+              // Return formatted transaction
+              return {
+                id: t.transactionID.toString(),
+                userID: t.userID.toString(),
+                icon: t.type === 'goal' ? 'star' : categoryResponse?.icon || 'shopping-cart',
+                name: t.type === 'goal'
+                  ? t.description
+                  : categoryResponse?.description || t.description,
+                time: new Date(t.date).toLocaleString(),
+                category: t.categoryID?.toString() || 'Uncategorized',
+                amount: `$${t.amount.toFixed(2)}`,
+                type: t.type,
+              };
+            })
+          );
+
+          // Set formatted transactions in state
           setTransactions(formattedTransactions);
+
+          // Debug formatted transactions
+          console.log('Formatted Transactions:', JSON.stringify(formattedTransactions, null, 2));
+        } else {
+          console.error('Unexpected response format:', transactionsResponse);
         }
+
         
   
         // Fetch total income
@@ -205,6 +222,8 @@ const HomeScreen = () => {
           });
         }
 
+
+        
         // Fetch All Transactions By UserID
         const transactionsByIDResponse = await fetchData(
           `/transactions?userID=${userID}`,
@@ -216,31 +235,47 @@ const HomeScreen = () => {
             },
           }
         );
-  
+
         console.log('Transactions response:', transactionsByIDResponse);
   
         if (Array.isArray(transactionsByIDResponse)) {
-          const formattedTransactionsBID = transactionsByIDResponse.map((t: any) => {
-            
-            const category = categoriesData.find(cat => cat.id === t.categoryID.toString());
+          const formattedTransactionsBID = await Promise.all(
+            transactionsByIDResponse.map(async (t: any) => {
+              // Fetch category data dynamically for each transaction
+              let categoryResponse;
+              try {
+                categoryResponse = await fetchData(
+                  `get/category?userID=${userID}&categoryID=${t.categoryID}`,
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'ngrok-skip-browser-warning': 'true',
+                    },
+                  }
+                );
+              } catch (error) {
+                console.error(`Error fetching category for categoryID ${t.categoryID}:`, error);
+              }
         
-            return {
-              id: t.transactionID.toString(),
-              userID: t.userID.toString(),
-              icon: t.type === 'income'
-                ? 'money-bill-wave'
-                : t.type === 'goal'
-                  ? 'star'
-                  : category?.icon || 'shopping-cart',
-              name: t.description,
-              time: new Date(t.date).toLocaleString(), // Форматируем дату
-              category: t.categoryID.toString(),
-              amount: `$${t.amount.toFixed(2)}`, // Форматируем сумму
-              type: t.type,
-            };
-          });
+              // Return formatted transaction object with dynamic category data
+              return {
+                id: t.transactionID.toString(),
+                userID: t.userID.toString(),
+                icon: categoryResponse?.icon || 'shopping-cart',
+                name: categoryResponse?.description || t.description,
+                time: new Date(t.date).toLocaleString(), 
+                category: t.categoryID.toString(),
+                amount: `$${t.amount.toFixed(2)}`,
+                type: t.type,
+              };
+            })
+          );
           setTransactionsByID(formattedTransactionsBID);
         }
+        
+
+
         
 
       } catch (error) {
@@ -336,14 +371,14 @@ const HomeScreen = () => {
         {/* Transactions */}
         <FlatList
           data={transactions}
-          keyExtractor={(item, index) => `${item.id}-${index}`} // Combine `id` and `index` for uniqueness
+          keyExtractor={(item, index) => `${item.id}-${index}`} 
           renderItem={({ item }) => (
             <View style={styles.transactionItem}>
-              <FontAwesome5
-                name={item.icon}
-                size={24}
-                color={item.type === 'income' ? '#00D699' : '#FF5252'}
-              />
+            <FontAwesome5
+              name={item.icon} 
+              size={24}
+              color={item.type === 'income' ? '#00D699' : '#FF5252'}
+            />
               <View style={styles.transactionDetails}>
                 <Text style={styles.transactionName}>{item.name}</Text>
                 <Text style={styles.transactionTime}>{item.time}</Text>

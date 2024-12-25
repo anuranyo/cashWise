@@ -1,4 +1,4 @@
-const BASE_URL = 'https://3cee-5-182-98-1.ngrok-free.app';
+const BASE_URL = 'https://8380-5-182-98-1.ngrok-free.app';
 
 export async function fetchData(endpoint: string, options: RequestInit = {}) {
   try {

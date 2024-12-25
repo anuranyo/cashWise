@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
+import { useLocalSearchParams } from 'expo-router';
+import { fetchData } from '../services/api';
 
 type Transaction = {
   id: string;
@@ -13,54 +21,83 @@ type Transaction = {
   type: string;
 };
 
-const allTransactions = [
-  {
-    month: 'April',
-    transactions: [
-      { id: '1', icon: 'money-bill-wave', name: 'Salary', time: '18:27 - April 30', category: 'Monthly', amount: '$4,000.00', type: 'income' },
-      { id: '2', icon: 'shopping-basket', name: 'Groceries', time: '17:00 - April 24', category: 'Pantry', amount: '-$100.00', type: 'expense' },
-      { id: '3', icon: 'home', name: 'Rent', time: '8:30 - April 15', category: 'Rent', amount: '-$674.40', type: 'expense' },
-    ],
-  },
-  {
-    month: 'March',
-    transactions: [
-      { id: '4', icon: 'utensils', name: 'Food', time: '19:30 - March 31', category: 'Dinner', amount: '-$70.40', type: 'expense' },
-    ],
-  },
-];
-
-const incomeTransactions = [
-  {
-    month: 'April',
-    transactions: [
-      { id: '1', icon: 'money-bill-wave', name: 'Salary', time: '18:27 - April 30', category: 'Monthly', amount: '$4,000.00', type: 'income' },
-    ],
-  },
-];
-
-const expenseTransactions = [
-  {
-    month: 'April',
-    transactions: [
-      { id: '2', icon: 'shopping-basket', name: 'Groceries', time: '17:00 - April 24', category: 'Pantry', amount: '-$100.00', type: 'expense' },
-      { id: '3', icon: 'home', name: 'Rent', time: '8:30 - April 15', category: 'Rent', amount: '-$674.40', type: 'expense' },
-    ],
-  },
-];
-
 const TransferScreen = () => {
-  const [selectedTab, setSelectedTab] = useState<'income' | 'expense' | 'all'>('all');
+  const [transactions, setTransactions] = useState<{ month: string; transactions: Transaction[] }[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<{ month: string; transactions: Transaction[] }[]>([]);
+  const [selectedTab, setSelectedTab] = useState<'income' | 'expense' | 'all'>('all'); // Tracks the selected tab
+  const { userID } = useLocalSearchParams(); // Getting userID from parameters
 
-  const transactionsData =
-    selectedTab === 'income'
-      ? incomeTransactions
-      : selectedTab === 'expense'
-      ? expenseTransactions
-      : allTransactions;
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetchData(`/transactionsIcon?userID=${userID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
 
+        if (Array.isArray(response)) {
+          // Group transactions by month
+          const groupedTransactions = response.reduce((acc: Record<string, Transaction[]>, t: any) => {
+            const date = new Date(t.date);
+            const monthName = date.toLocaleString('default', { month: 'long' });
+            const year = date.getFullYear();
+            const monthYear = `${monthName} ${year}`;
+
+            const formattedTransaction: Transaction = {
+              id: t.transactionID.toString(),
+              icon: t.icon,
+              name: t.description,
+              time: `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${monthName} ${date.getDate()}`,
+              category: t.categoryID.toString(),
+              amount: `${t.type === 'expense' ? '-' : ''}$${t.amount.toFixed(2)}`,
+              type: t.type,
+            };
+
+            if (!acc[monthYear]) {
+              acc[monthYear] = [];
+            }
+            acc[monthYear].push(formattedTransaction);
+
+            return acc;
+          }, {});
+
+          // Convert grouped transactions object to an array
+          const formattedTransactions = Object.entries(groupedTransactions).map(([month, transactions]) => ({
+            month,
+            transactions,
+          }));
+
+          setTransactions(formattedTransactions); // Store all transactions
+          setFilteredTransactions(formattedTransactions); // Initialize filtered transactions to all
+        } else {
+          console.error('Unexpected response format:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    };
+
+    fetchTransactions();
+  }, [userID]);
+
+  // Function to handle tab selection and toggle filtering
   const handleTabPress = (tab: 'income' | 'expense') => {
-    setSelectedTab((prevTab) => (prevTab === tab ? 'all' : tab));
+    if (selectedTab === tab) {
+      // Remove filter if the same tab is clicked again
+      setSelectedTab('all');
+      setFilteredTransactions(transactions);
+    } else {
+      // Filter transactions by selected type
+      setSelectedTab(tab);
+      const filtered = transactions.map((section) => ({
+        month: section.month,
+        transactions: section.transactions.filter((t) => t.type === tab),
+      })).filter((section) => section.transactions.length > 0); // Remove empty months
+      setFilteredTransactions(filtered);
+    }
   };
 
   return (
@@ -104,7 +141,7 @@ const TransferScreen = () => {
         </View>
 
         {/* Transactions Section */}
-        {transactionsData.map((section) => (
+        {filteredTransactions.map((section) => (
           <View key={section.month}>
             <Text style={styles.monthTitle}>{section.month}</Text>
             {section.transactions.map((transaction) => (
@@ -182,48 +219,6 @@ const styles = StyleSheet.create({
     color: '#2A9D8F',
     marginTop: 5,
   },
-  balanceSummaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 10,
-  },
-  balanceSummaryCard: {
-    flex: 1,
-    backgroundColor: '#E6FFF5',
-    borderRadius: 15,
-    alignItems: 'center',
-    padding: 15,
-    marginHorizontal: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  selectedCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#00C9A7',
-  },
-  balanceSummaryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginTop: 10,
-  },
-  balanceSummaryAmount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#00D699',
-    marginTop: 5,
-  },
-  balanceSummaryAmountExpense: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A73E8',
-    marginTop: 5,
-  },
   monthTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -276,6 +271,48 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#E63946',
+  },
+  selectedCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#00C9A7',
+  },
+  balanceSummaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  balanceSummaryCard: {
+    flex: 1,
+    backgroundColor: '#E6FFF5',
+    borderRadius: 15,
+    alignItems: 'center',
+    padding: 15,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  balanceSummaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 10,
+  },
+  balanceSummaryAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#00D699',
+    marginTop: 5,
+  },
+  balanceSummaryAmountExpense: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A73E8',
+    marginTop: 5,
   },
 });
 
