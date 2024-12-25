@@ -31,6 +31,11 @@ const HomeScreen = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
+  const [goal, setGoal] = useState({
+    name: '',
+    targetAmount: 0,
+    currentAmount: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
   const today = new Date().toISOString().split('T')[0];
@@ -39,13 +44,13 @@ const HomeScreen = () => {
     const fetchServerData = async () => {
       try {
         setLoading(true);
-
+  
         // Check if userID exists
         if (!userID) {
           console.error('userID not found in params');
           return;
         }
-
+  
         // Fetch user data
         const userResponse = await fetchData(`getUserByID/${userID}`, {
           method: 'GET',
@@ -54,42 +59,42 @@ const HomeScreen = () => {
             'ngrok-skip-browser-warning': 'true',
           },
         });
-
+  
         if (userResponse && userResponse.fullName) {
           setFullName(userResponse.fullName);
         } else {
           console.error('Invalid user response:', userResponse);
         }
         console.log('Fetching data for userID:', userID);
-
-      // Fetch transactions data based on activeTab
-      const transactionsResponse = await fetchData(
-        `transactions/filter?period=${activeTab}&date=${today}&userID=${userID}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-          },
+  
+        // Fetch transactions data based on activeTab
+        const transactionsResponse = await fetchData(
+          `transactions/filter?period=${activeTab}&date=${today}&userID=${userID}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
+  
+        console.log('Transactions response:', transactionsResponse);
+  
+        if (Array.isArray(transactionsResponse)) {
+          const formattedTransactions = transactionsResponse.map((t: any) => ({
+            id: t.transactionID.toString(),
+            userID: t.userID.toString(),
+            icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
+            name: t.description,
+            time: new Date(t.date).toLocaleString(), // Format date
+            category: t.categoryID.toString(),
+            amount: `$${t.amount.toFixed(2)}`, // Format amount
+            type: t.type,
+          }));
+          setTransactions(formattedTransactions);
         }
-      );
-
-      console.log('Transactions response:', transactionsResponse);
-
-      if (Array.isArray(transactionsResponse)) {
-        const formattedTransactions = transactionsResponse.map((t: any) => ({
-          id: t.transactionID.toString(),
-          userID: t.userID.toString(),
-          icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
-          name: t.description,
-          time: new Date(t.date).toLocaleString(), // Format date
-          category: t.categoryID.toString(),
-          amount: `$${t.amount.toFixed(2)}`, // Format amount
-          type: t.type,
-        }));
-        setTransactions(formattedTransactions);
-
-
+  
         // Fetch total income
         const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
           method: 'GET',
@@ -98,13 +103,13 @@ const HomeScreen = () => {
             'ngrok-skip-browser-warning': 'true',
           },
         });
-
+  
         if (incomeResponse?.totalIncome) {
           setTotalIncome(incomeResponse.totalIncome);
         } else {
           console.error('Invalid total income response:', incomeResponse);
         }
-
+  
         // Fetch total expense
         const expenseResponse = await fetchData(`transaction/getTotalExpense?userID=${userID}`, {
           method: 'GET',
@@ -113,22 +118,81 @@ const HomeScreen = () => {
             'ngrok-skip-browser-warning': 'true',
           },
         });
-        
-        
-      } else {
-        console.error('Unexpected transactions response format:', transactionsResponse);
-      }
+  
+        if (expenseResponse?.totalExpense) {
+          setTotalExpense(expenseResponse.totalExpense);
+        } else {
+          console.error('Invalid total expense response:', expenseResponse);
+        }
+  
+        // Fetch goal transactions to calculate the current amount
+        const goalTransactionsResponse = await fetchData(
+          `transactions-goal?userID=${userID}&type=goal`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
+
+        console.log("Goal Transactions Response:", goalTransactionsResponse);
+
+        const currentAmount = Array.isArray(goalTransactionsResponse)
+          ? goalTransactionsResponse.reduce(
+              (sum: number, transaction: any) => sum + (transaction.amount || 0),
+              0
+            )
+          : 0;
+
+        console.log("Calculated Current Amount:", currentAmount);
+
+        // Fetch goal details
+        const goalResponse = await fetchData(`goals?userID=${userID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+
+        console.log("Goal Response:", goalResponse);
+
+        if (Array.isArray(goalResponse) && goalResponse.length > 0) {
+          const { name, targetAmount } = goalResponse[0];
+
+          setGoal({
+            name: name || 'Unnamed Goal',
+            targetAmount: targetAmount || 0,
+            currentAmount, // Dynamically calculated
+          });
+
+          console.log("Goal Set to State:", {
+            name: name || 'Unnamed Goal',
+            targetAmount: targetAmount || 0,
+            currentAmount,
+          });
+        } else {
+          console.error('No goals found for the user');
+          setGoal({
+            name: 'Unnamed Goal',
+            targetAmount: 0,
+            currentAmount: 0,
+          });
+        }
+
+
       } catch (error) {
-      console.error('Error fetching data:', error);
+        console.error('Error fetching data:', error);
       } finally {
-      setLoading(false);
+        setLoading(false);
       }
-      };
-
-      fetchServerData();
-      }, [userID, activeTab]); // Refetch when activeTab changes
-
-
+    };
+  
+    fetchServerData();
+  }, [userID, activeTab]);
+  
   if (loading) {
     return (
       <View style={styles.container}>
@@ -138,7 +202,7 @@ const HomeScreen = () => {
     );
   }
   
-  const totalBalance = totalIncome - totalExpense;
+  //const totalBalance = totalIncome - totalExpense;
 
   return (
     <View style={styles.container}>
@@ -160,7 +224,7 @@ const HomeScreen = () => {
         <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.incomeAmount}>${totalBalance.toFixed(2)}</Text>
+            <Text style={styles.incomeAmount}>${totalIncome.toFixed(2)}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.balanceItem}>
@@ -169,18 +233,21 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Savings and Revenue */}
-        <View style={styles.savingsContainer}>
-          <SavingsProgress savingsAmount={totalIncome} goal={10000} />
-          <View style={styles.dividerVertical} />
-          <View style={styles.revenueCont}>
-            <View>
-              <Text style={styles.revenueLabel}>Current Amount</Text>
-              <Text style={styles.revenueAmount}>${totalIncome.toFixed(2)}</Text>
-            </View>
+      {/* Savings and Revenue */}
+      <View style={styles.savingsContainer}>
+        <SavingsProgress
+          currentAmount={goal.currentAmount}
+          targetAmount={goal.targetAmount}
+          goalName={goal.name}
+        />
+        <View style={styles.dividerVertical} />
+        <View style={styles.revenueCont}>
+          <View>
+            <Text style={styles.revenueLabel}>Current Amount</Text>
+            <Text style={styles.revenueAmount}>${goal.currentAmount.toFixed(2)}</Text>
           </View>
         </View>
-
+      </View>
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
@@ -339,7 +406,7 @@ const styles = StyleSheet.create({
   expenseAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FF5252',
+    color: '#',
     marginTop: 5,
   },
   divider: {
@@ -353,7 +420,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 20,
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#00C9A7',
     borderRadius: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -379,7 +446,7 @@ const styles = StyleSheet.create({
   revenueAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#00C9A7',
+    color: '#333333',
     marginTop: 5,
   },
 });

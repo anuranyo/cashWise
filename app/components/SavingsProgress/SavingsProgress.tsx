@@ -3,12 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 type SavingsProgressProps = {
-  savingsAmount: number;
-  goal: number;
+  currentAmount: number;
+  targetAmount: number;
+  goalName: string;
 };
 
-const SavingsProgress: React.FC<SavingsProgressProps> = ({ savingsAmount, goal }) => {
-  const progressValue = Math.min((savingsAmount / goal) * 100, 100); // Calculate progress percentage
+const SavingsProgress: React.FC<SavingsProgressProps> = ({ currentAmount, targetAmount, goalName }) => {
+  const progressValue = Math.min((currentAmount / targetAmount) * 100, 100);
 
   return (
     <View style={styles.progressContainer}>
@@ -16,16 +17,16 @@ const SavingsProgress: React.FC<SavingsProgressProps> = ({ savingsAmount, goal }
         size={80}
         width={6}
         fill={progressValue}
-        tintColor="#00C9A7"
+        tintColor="#333333"
         backgroundColor="#E8FFF7"
       >
         {() => (
           <Text style={styles.progressValueText}>{progressValue.toFixed(1)}%</Text>
         )}
       </AnimatedCircularProgress>
-      <Text style={styles.progressText}>Savings On Goals</Text>
+      <Text style={styles.progressText}>{goalName}</Text>
       <Text style={styles.goalText}>
-        {progressValue.toFixed(1)}% of ${goal.toFixed(2)}
+        {progressValue.toFixed(1)}% of ${targetAmount.toFixed(2)}
       </Text>
     </View>
   );
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
   progressValueText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#00C9A7',
+    color: '#333333',
   },
   progressText: {
     marginTop: 10,
