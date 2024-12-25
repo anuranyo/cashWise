@@ -1,14 +1,45 @@
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
+import { fetchData } from '../services/api';
 
 const NewPasswordScreen = () => {
+  const { email, userID } = useLocalSearchParams(); 
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      await fetchData(`update-user?userID=${userID}`, {
+        method: 'PUT',
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      Alert.alert('Success', 'Password has been updated.');
+      router.push('/login'); 
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      Alert.alert('Error', 'Unable to reset password. Please try again.');
+    }
+  };
+  
   return (
     <View style={styles.container}>
       <Text style={styles.header}>New Password</Text>
@@ -18,7 +49,9 @@ const NewPasswordScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Enter new password"
-          secureTextEntry={true}
+          secureTextEntry
+          value={newPassword}
+          onChangeText={setNewPassword}
           placeholderTextColor="#95D9A7"
         />
       </View>
@@ -28,14 +61,16 @@ const NewPasswordScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Confirm new password"
-          secureTextEntry={true}
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
           placeholderTextColor="#95D9A7"
         />
       </View>
 
-    <TouchableOpacity style={styles.changePasswordButton} onPress={() => router.push('/login')}>
-      <Text style={styles.buttonText}>Change Password</Text>
-    </TouchableOpacity>
+      <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
+        <Text style={styles.buttonText}>Change Password</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -70,17 +105,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  changePasswordButton: {
-    backgroundColor: '#00D699',
-    width: '80%',
-    padding: 15,
+  button: {
+    backgroundColor: '#00A676',
+    paddingVertical: 15,
+    paddingHorizontal: 30, 
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 20,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });
