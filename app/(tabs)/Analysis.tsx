@@ -44,7 +44,7 @@ const AnalysisScreen = () => {
 
   const today = new Date().toISOString().split('T')[0];
   
-    useEffect(() => {
+  useEffect(() => {
       const fetchServerData = async () => {
         try {
           setLoading(true);
@@ -93,38 +93,37 @@ const AnalysisScreen = () => {
             name: t.description,
             time: new Date(t.date).toLocaleString(), // Format date
             category: t.categoryID.toString(),
-            amount: `$${t.amount.toFixed(2)}`, 
+            amount: `$${t.amount.toFixed(2)}`, // Format amount
             type: t.type,
           }));
           setTransactions(formattedTransactions);
-          
-          // Формуємо дані для діаграми
-          const groupedData = formattedTransactions.reduce(
-            (acc, transaction) => {
-              const { type, amount } = transaction;
-              const value = parseFloat(amount); // Конвертуємо у число
-
-              if (type === 'income') {
-                acc.income += value;
-              } else if (type === 'expense') {
-                acc.expense += value;
-              }
-              return acc;
+  
+  
+          // Fetch total income
+          const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
             },
-            { income: 0, expense: 0 }
-          );
-
-          setIncome(groupedData.income);
-          setExpense(groupedData.expense);
-
-          const chartDataFormatted: ChartData[] = formattedTransactions.map((transaction) => ({
-            value: parseFloat(transaction.amount), 
-            label: new Date(transaction.time).toLocaleDateString('en-US', { weekday: 'short' }),
-            frontColor: transaction.type === 'income' ? '#3BE9DE' : '#FF6F61',
-          }));
+          });
+  
+          if (incomeResponse?.totalIncome) {
+            //setTotalIncome(incomeResponse.totalIncome);
+          } else {
+            console.error('Invalid total income response:', incomeResponse);
+          }
+  
+          // Fetch total expense
+          const expenseResponse = await fetchData(`transaction/getTotalExpense?userID=${userID}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          });
           
-          setChartData(chartDataFormatted);
-
+          
         } else {
           console.error('Unexpected transactions response format:', transactionsResponse);
         }
@@ -136,7 +135,7 @@ const AnalysisScreen = () => {
         };
   
         fetchServerData();
-        }, [userID, activeTab]); 
+        }, [userID, activeTab]);
   
   
     if (loading) {
