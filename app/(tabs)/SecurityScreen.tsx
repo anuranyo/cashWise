@@ -24,7 +24,7 @@ const SecurityScreen = () => {
       <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: "#E6FFF5" }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push({ pathname: './NotificationScreen', params: { userID } })}>
+          <TouchableOpacity onPress={() => router.push({ pathname: './ProfileScreen', params: { userID } })}>
             <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Security</Text>
@@ -41,7 +41,7 @@ const SecurityScreen = () => {
           <View>
             <TouchableOpacity
               style={styles.optionItem}
-              onPress={() => toggleExpand("changePassword")}
+              onPress={() =>router.push("/ForgotPassword")}
             >
               <Text style={styles.optionText}>Change Password</Text>
               <FontAwesome5
