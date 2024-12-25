@@ -19,7 +19,7 @@ type Transaction = {
   id: string;
   icon: string;
   name: string;
-  time: string;
+  date: string;
   category: string;
   amount: string;
   type: string;
@@ -33,110 +33,200 @@ type ChartData = {
 };
 
 const AnalysisScreen = () => {
-  const { userID } = useLocalSearchParams();
+  const { userID } = useLocalSearchParams(); // Getting userID from parameters
   const [fullName, setFullName] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [income, setIncome] = useState(0);
   const [expense, setExpense] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date();
   
-  useEffect(() => {
-      const fetchServerData = async () => {
-        try {
-          setLoading(true);
-  
-          // Check if userID exists
-          if (!userID) {
-            console.error('userID not found in params');
-            return;
-          }
-  
-          // Fetch user data
-          const userResponse = await fetchData(`getUserByID/${userID}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-          });
-  
-          if (userResponse && userResponse.fullName) {
-            setFullName(userResponse.fullName);
-          } else {
-            console.error('Invalid user response:', userResponse);
-          }
-          console.log('Fetching data for userID:', userID);
-  
-        // Fetch transactions data based on activeTab
-        const transactionsResponse = await fetchData(
-          `transactions/filter?period=${activeTab}&date=${today}&userID=${userID}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-          }
+  const isToday = (date: Date) => date.toDateString() === today.toDateString();
+  const isThisWeek = (date: Date) => {
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    return date >= startOfWeek && date <= endOfWeek;
+  };
+  const getWeekNumber = (date: Date) => {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  };
+
+  const parseAmount = (amount: string): number => {
+    const parsed = parseFloat(amount);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const fetchAllTransactions = async () => {
+    try {
+      if (!userID) {
+        console.error('userID not provided');
+        return;
+      }
+
+      const response = await fetchData(`transactions?userID=${userID}`);
+      if (Array.isArray(response)) {
+        setTransactions(
+          response.map((t) => ({
+            ...t,
+            date: new Date(t.date).toISOString(), 
+          }))
         );
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const calculateSummary = (filteredTransactions: Transaction[]) => {
+    const totalIncome = filteredTransactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+    const totalExpense = filteredTransactions
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+
+    setIncome(totalIncome);
+    setExpense(totalExpense);
+  };
+
+  const calculateTotalByType = (transactions: Transaction[], type: string): string => {
+    const total = transactions
+      .filter((t) => t.type === type)
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0); 
   
-        console.log('Transactions response:', transactionsResponse);
+    return total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  };
   
-        if (Array.isArray(transactionsResponse)) {
-          const formattedTransactions = transactionsResponse.map((t: any) => ({
-            id: t.transactionID.toString(),
-            userID: t.userID.toString(),
-            icon: t.type === 'income' ? 'money-bill-wave' : 'shopping-cart',
-            name: t.description,
-            time: new Date(t.date).toLocaleString(), // Format date
-            category: t.categoryID.toString(),
-            amount: `$${t.amount.toFixed(2)}`, // Format amount
-            type: t.type,
-          }));
-          setTransactions(formattedTransactions);
+  const updateChartData = () => {
+    let filteredTransactions: Transaction[] = [];
+    const data: ChartData[] = [];
   
+    if (activeTab === 'daily') {
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        return date;
+      });
   
-          // Fetch total income
-          const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-          });
+      last7Days.reverse().forEach((date) => {
+        const dayTransactions = transactions.filter(
+          (t) => new Date(t.date).toDateString() === date.toDateString()
+        );
+        filteredTransactions = [...filteredTransactions, ...dayTransactions];
   
-          if (incomeResponse?.totalIncome) {
-            //setTotalIncome(incomeResponse.totalIncome);
-          } else {
-            console.error('Invalid total income response:', incomeResponse);
-          }
+        const dayIncome = dayTransactions
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+        const dayExpense = dayTransactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
   
-          // Fetch total expense
-          const expenseResponse = await fetchData(`transaction/getTotalExpense?userID=${userID}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-          });
-          
-          
-        } else {
-          console.error('Unexpected transactions response format:', transactionsResponse);
-        }
-        } catch (error) {
-        console.error('Error fetching data:', error);
-        } finally {
-        setLoading(false);
-        }
-        };
+        data.push({
+          value: dayIncome,
+          label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          frontColor: '#00D699',
+        });
   
-        fetchServerData();
-        }, [userID, activeTab]);
+        data.push({
+          value: dayExpense,
+          label: '',
+          frontColor: '#006DFF',
+        });
+      });
+    } else if (activeTab === 'weekly') {
+      const currentWeek = getWeekNumber(today);
   
+      for (let weekOffset = 3; weekOffset >= 0; weekOffset--) {
+        const weekTransactions = transactions.filter(
+          (t) => getWeekNumber(new Date(t.date)) === currentWeek - weekOffset
+        );
+        filteredTransactions = [...filteredTransactions, ...weekTransactions];
+  
+        const weekIncome = weekTransactions
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+  
+        const weekExpense = weekTransactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+  
+        data.push({
+          value: weekIncome,
+          label: `Week ${currentWeek - weekOffset}`,
+          frontColor: '#00D699',
+        });
+  
+        data.push({
+          value: weekExpense,
+          label: '',
+          frontColor: '#006DFF',
+        });
+      }
+    } else if (activeTab === 'monthly') {
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const date = new Date(today);
+        date.setMonth(today.getMonth() - i);
+        return date;
+      });
+  
+      last6Months.reverse().forEach((month) => {
+        const monthTransactions = transactions.filter(
+          (t) =>
+            new Date(t.date).getMonth() === month.getMonth() &&
+            new Date(t.date).getFullYear() === month.getFullYear()
+        );
+        filteredTransactions = [...filteredTransactions, ...monthTransactions];
+  
+        const monthIncome = monthTransactions
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+  
+        const monthExpense = monthTransactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + parseAmount(t.amount), 0);
+  
+        data.push({
+          value: monthIncome,
+          label: month.toLocaleDateString('en-US', { month: 'short' }),
+          frontColor: '#00D699',
+        });
+  
+        data.push({
+          value: monthExpense,
+          label: '',
+          frontColor: '#006DFF',
+        });
+      });
+    }
+  
+    setChartData(data);
+    calculateSummary(filteredTransactions); // Update summary based on filtered transactions
+  };
+  
+
+  useEffect(() => {
+    setLoading(true);
+    fetchAllTransactions().then(() => {
+      updateChartData();
+      setLoading(false);
+    });
+  }, [activeTab]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#00C9A7" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
   
     if (loading) {
       return (
@@ -161,25 +251,22 @@ const AnalysisScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Balance 
+        {/* Balance */}
         <View style={styles.balanceContainer}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Balance</Text>
             <Text style={styles.balanceValue}>
-            ${totalBalance.toLocaleString()}
+              ${calculateTotalByType(transactions, 'income')}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Total Expense</Text>
             <Text style={styles.expenseValue}>
-            -${transactions
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0) // Конвертуємо amount у число
-        .toLocaleString()}
+            -${calculateTotalByType(transactions, 'expense')}
             </Text>
           </View>
-        </View>*/}
+        </View>
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
@@ -209,28 +296,32 @@ const AnalysisScreen = () => {
               </TouchableOpacity>
             </View>
             <BarChart
-            data={chartData}
-            barWidth={10}
-            spacing={20}
-            barBorderRadius={4}
-            yAxisThickness={1}
-            yAxisColor="lightgray"
-            xAxisThickness={1}
-            xAxisColor="lightgray"
-            yAxisTextStyle={{ color: 'gray', fontSize: 12 }}
-            stepValue={1000}
-            maxValue={Math.max(income, expense)}
-            noOfSections={5}
-            labelWidth={40}
-            xAxisLabelTextStyle={{
-              color: 'gray',
-              textAlign: 'center',
-              fontSize: 12,
-              marginTop: 5,
-            }}
-            width={Dimensions.get('window').width * 0.92}
-          />
-          </View>
+  data={chartData}
+  barWidth={10}
+  spacing={10}
+  barBorderRadius={5}
+  yAxisThickness={1}
+  yAxisColor="gray"
+  yAxisTextStyle={{ color: 'gray', fontSize: 11 }}
+  xAxisThickness={1}
+  xAxisColor="gray"
+  xAxisLabelTextStyle={{
+    color: 'gray',
+    fontSize: 12,
+    textAlign: 'center',
+    flex: 1,
+  }}
+  noOfSections={activeTab === 'daily' ? 6 : activeTab === 'weekly' ? 5 : 6} 
+  stepValue={activeTab === 'daily' ? 100 : activeTab === 'weekly' ? 200 : 500} 
+  maxValue={activeTab === 'daily' ? 500 : activeTab === 'weekly' ? 1000 : 3000} 
+  width={Dimensions.get('window').width} // Use full screen width
+  hideRules={false}
+  rulesColor="lightgray"
+  showXAxisIndices
+  xAxisIndicesHeight={2}
+  xAxisIndicesColor="lightgray"
+/>
+        </View>
 
           {/* Income & Expense Summary */}
           <View style={styles.summaryContainer}>
@@ -238,14 +329,14 @@ const AnalysisScreen = () => {
               <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
               <Text style={styles.summaryLabel}>Income</Text>
               <Text style={styles.summaryValue}>
-              ${income.toLocaleString()}
+              ${income.toFixed(2)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <FontAwesome5 name="arrow-down" size={24} color="#0068ff" />
               <Text style={styles.summaryLabel}>Expense</Text>
               <Text style={styles.summaryValue}>
-              ${expense.toLocaleString()}
+              ${expense.toFixed(2)}
               </Text>
             </View>
           </View>
@@ -327,7 +418,7 @@ const styles = StyleSheet.create({
   expenseValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#E63946',
+    color: '#006dff',
   },
   divider: {
     width: 1,
