@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,35 +6,101 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { fetchData } from '../services/api';
+
+type ProfileOption = {
+  id: string;
+  icon: string;
+  name: string;
+  route: string;
+  params: { userID: string };
+};
 
 const ProfileScreen = () => {
+  const { userID } = useLocalSearchParams(); // Getting userID from parameters
   const router = useRouter();
+  const [user, setUser] = useState<{
+    fullName: string;
+    email: string;
+    profilePicture: string;
+    role: string;
+    id: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const parsedUserID = Array.isArray(userID) ? userID[0] : userID; 
 
-  const profileOptions = [
-    { id: '1', icon: 'user', name: 'Edit Profile', route: '/EditProfileScreen' },
-    { id: '2', icon: 'shield-alt', name: 'Security', route: './SecurityScreen' },
-    { id: '4', icon: 'question-circle', name: 'Help', route: '/FAQScreen' },
-    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: '/auth' },
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetchData(
+          `/getUserAndSettings?userID=${userID}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
+
+        if (response) {
+          setUser({
+            fullName: response.fullName || 'Unknown User',
+            email: response.email || 'No email provided',
+            profilePicture: response.profilePicture || 'https://via.placeholder.com/150',
+            role: response.role || 'User',
+            id: response.userID?.toString() || 'Unknown ID',
+          });
+        } else {
+          console.error('Invalid user response:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const profileOptions: ProfileOption[] = [
+    { id: '1', icon: 'user', name: 'Edit Profile', route: '/EditProfileScreen', params: { userID: parsedUserID } },
+    { id: '2', icon: 'shield-alt', name: 'Security', route: './SecurityScreen', params: { userID: parsedUserID } },
+    { id: '4', icon: 'question-circle', name: 'Help', route: '/FAQScreen', params: { userID: parsedUserID } },
+    { id: '5', icon: 'sign-out-alt', name: 'Logout', route: '/auth', params: { userID: parsedUserID } },
   ];
-  
+
   const renderProfileOption = ({
     item,
   }: {
-    item: { icon: string; name: string; route: string };
+    item: { icon: string; name: string; route: string; params: { userID: string } };
   }) => (
     <TouchableOpacity
       style={styles.optionItem}
-      onPress={() => router.push(item.route as any)}>
+      onPress={() => router.push({ pathname: item.route, params: item.params })}
+    >
       <View style={styles.iconContainer}>
         <FontAwesome5 name={item.icon} size={24} color="#FFFFFF" />
       </View>
       <Text style={styles.optionText}>{item.name}</Text>
     </TouchableOpacity>
   );
+  
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00C9A7" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -53,19 +119,22 @@ const ProfileScreen = () => {
       <View style={styles.profileSection}>
         <Image
           style={styles.profileImage}
-          source={{ uri: 'https://via.placeholder.com/150' }}
+          source={{ uri: user?.profilePicture }}
         />
-        <Text style={styles.profileName}>John Smith</Text>
-        <Text style={styles.profileId}>ID: 2530024</Text>
+        <Text style={styles.profileName}>{user?.fullName || 'Unknown User'}</Text>
+        <Text style={styles.profileEmail}>Email: {user?.email || 'No email provided'}</Text>
+        <Text style={styles.profileRole}>Role: {user?.role || 'User'}</Text>
+        <Text style={styles.profileId}>ID: {user?.id || 'Unknown ID'}</Text>
       </View>
 
       {/* Profile Options */}
       <FlatList
         data={profileOptions}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id} // Use 'id' to ensure unique keys
         renderItem={renderProfileOption}
         contentContainerStyle={styles.optionsContainer}
       />
+
 
       {/* Bottom Navigation */}
       <BottomNavigation />
@@ -114,9 +183,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
   },
+  profileEmail: {
+    fontSize: 16,
+    color: '#7D7D7D',
+    marginTop: 5,
+  },
+  profileRole: {
+    fontSize: 16,
+    color: '#2A9D8F',
+    marginTop: 5,
+  },
   profileId: {
     fontSize: 14,
     color: '#7D7D7D',
+    marginTop: 5,
   },
   optionsContainer: {
     marginTop: 20,
@@ -148,6 +228,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333333',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E6FFF5',
   },
 });
 

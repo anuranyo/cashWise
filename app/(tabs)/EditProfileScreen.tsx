@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,38 +6,149 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
+  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { fetchData } from '../services/api';
 
 const EditProfileScreen = () => {
   const router = useRouter();
+  const { userID } = useLocalSearchParams();
 
-  const [username, setUsername] = useState('John Smith');
-  const [phone, setPhone] = useState('+44 555 5555 55');
-  const [email, setEmail] = useState('example@example.com');
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [darkTheme, setDarkTheme] = useState(false);
+  const [user, setUser] = useState({
+    fullName: '',
+    email: '',
+    profilePicture: '',
+    darkTheme: false,
+  });
+  const [loading, setLoading] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(false);
 
-  const handleUpdateProfile = () => {
-    console.log('Updated Profile:', {
-      username,
-      phone,
-      email,
-      pushNotifications,
-      darkTheme,
-    });
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetchData(
+          `/getUserAndSettings?userID=${userID}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
+
+        if (response) {
+          setUser({
+            fullName: response.fullName || '',
+            email: response.email || '',
+            profilePicture: response.profilePicture || '',
+            darkTheme: response.darkTheme || false,
+          });
+        } else {
+          console.error('Error fetching user data:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [userID]);
+
+  const handleUpdateProfile = async () => {
+    try {
+      const { fullName, email, darkTheme } = user;
+  
+      if (!fullName.trim() || !email.trim()) {
+        Alert.alert('Error', 'Full Name and Email cannot be empty.');
+        return;
+      }
+  
+      setLoading(true);
+  
+      // Explicitly define the type of the promises array
+      const promises: Promise<any>[] = [];
+  
+      // Update Full Name if changed
+      if (fullName.trim() !== user.fullName) {
+        promises.push(
+          fetchData(`update-user?userID=${userID}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({ fullName: fullName.trim() }),
+          })
+        );
+      }
+  
+      // Update Email if changed
+      if (email.trim() !== user.email) {
+        promises.push(
+          fetchData(`update-user?userID=${userID}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({ email: email.trim() }),
+          })
+        );
+      }
+  
+      // Update Dark Theme if changed
+      if (darkTheme !== user.darkTheme) {
+        promises.push(
+          fetchData(`update-user?userID=${userID}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({ darkTheme }),
+          })
+        );
+      }
+  
+      // Wait for all promises to resolve
+      await Promise.all(promises);
+  
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile.');
+    } finally {
+      setLoading(false);
+    }
   };
+  
+  
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00C9A7" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/ProfileScreen')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/ProfileScreen', params: { userID } })}>
           <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit My Profile</Text>
-        <TouchableOpacity onPress={() => router.push('./NotificationScreen')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: './NotificationScreen', params: { userID } })}>
           <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -45,43 +156,38 @@ const EditProfileScreen = () => {
       {/* Profile Details */}
       <View style={styles.profileContainer}>
         <View style={styles.profileImageWrapper}>
-          <FontAwesome5
-            name="user-circle"
-            size={100}
-            color="#7D7D7D"
+          <Image
+            source={{
+              uri: user.profilePicture || 'https://via.placeholder.com/150',
+            }}
             style={styles.profileImage}
+            onError={() =>
+              setUser((prevUser) => ({
+                ...prevUser,
+                profilePicture: 'https://via.placeholder.com/150',
+              }))
+            }
           />
           <TouchableOpacity style={styles.editIcon}>
             <FontAwesome5 name="camera" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.profileName}>John Smith</Text>
-        <Text style={styles.profileId}>ID: 25030024</Text>
+        <Text style={styles.profileName}>{user.fullName || 'Unknown User'}</Text>
+        <Text style={styles.profileId}>ID: {userID}</Text>
       </View>
 
       {/* Account Settings */}
       <View style={styles.accountSettings}>
         <Text style={styles.settingsHeader}>Account Settings</Text>
 
-        {/* Username */}
+        {/* Full Name */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Username</Text>
+          <Text style={styles.label}>Full Name</Text>
           <TextInput
             style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            placeholderTextColor="#7D7D7D"
-          />
-        </View>
-
-        {/* Phone */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone</Text>
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
+            value={user.fullName}
+            onChangeText={(text) => setUser({ ...user, fullName: text })}
+            placeholder="Enter your full name"
             placeholderTextColor="#7D7D7D"
           />
         </View>
@@ -91,16 +197,28 @@ const EditProfileScreen = () => {
           <Text style={styles.label}>Email Address</Text>
           <TextInput
             style={styles.input}
-            value={email}
-            onChangeText={setEmail}
+            value={user.email}
+            onChangeText={(text) => setUser({ ...user, email: text })}
             keyboardType="email-address"
+            placeholder="Enter your email"
             placeholderTextColor="#7D7D7D"
+          />
+        </View>
+
+        {/* Dark Theme */}
+        <View style={styles.toggleGroup}>
+          <Text style={styles.toggleLabel}>Dark Theme</Text>
+          <Switch
+            value={user.darkTheme}
+            onValueChange={(value) => setUser({ ...user, darkTheme: value })}
+            thumbColor={user.darkTheme ? '#00C9A7' : '#E8E8E8'}
+            trackColor={{ false: '#E8E8E8', true: '#00C9A7' }}
           />
         </View>
 
         {/* Push Notifications */}
         <View style={styles.toggleGroup}>
-          <Text style={styles.toggleLabel}>Push Notifications</Text>
+          <Text style={styles.toggleLabel}>Notifications</Text>
           <Switch
             value={pushNotifications}
             onValueChange={setPushNotifications}
@@ -109,23 +227,12 @@ const EditProfileScreen = () => {
           />
         </View>
 
-        {/* Dark Theme */}
-        <View style={styles.toggleGroup}>
-          <Text style={styles.toggleLabel}>Turn Dark Theme</Text>
-          <Switch
-            value={darkTheme}
-            onValueChange={setDarkTheme}
-            thumbColor={darkTheme ? '#00C9A7' : '#E8E8E8'}
-            trackColor={{ false: '#E8E8E8', true: '#00C9A7' }}
-          />
-        </View>
-
-        {/* Update Profile Button */}
+        {/* Save Button */}
         <TouchableOpacity
           style={styles.updateButton}
           onPress={handleUpdateProfile}
         >
-          <Text style={styles.updateButtonText}>Update Profile</Text>
+          <Text style={styles.updateButtonText}>Save Changes</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -207,16 +314,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333333',
   },
-  toggleGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    color: '#333333',
-  },
   updateButton: {
     backgroundColor: '#00C9A7',
     padding: 15,
@@ -228,6 +325,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E6FFF5',
+  },
+  toggleGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    color: '#333333',
   },
 });
 
