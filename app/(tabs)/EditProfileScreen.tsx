@@ -22,9 +22,9 @@ const EditProfileScreen = () => {
     fullName: '',
     email: '',
     profilePicture: '',
-    darkTheme: false,
   });
   const [loading, setLoading] = useState(true);
+  const [darkTheme, setDarkTheme] = useState(false);
   const [pushNotifications, setPushNotifications] = useState(false);
 
   useEffect(() => {
@@ -46,7 +46,6 @@ const EditProfileScreen = () => {
             fullName: response.fullName || '',
             email: response.email || '',
             profilePicture: response.profilePicture || '',
-            darkTheme: response.darkTheme || false,
           });
         } else {
           console.error('Error fetching user data:', response);
@@ -61,73 +60,102 @@ const EditProfileScreen = () => {
     fetchUserData();
   }, [userID]);
 
+  const toggleDarkTheme = async () => {
+    try {
+      setDarkTheme(!darkTheme);
+      await fetchData(
+        `/settings/toggle-dark-theme?userID=${userID}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        }
+      );
+      Alert.alert('Успех', 'Тема успешно переключена!');
+    } catch (error) {
+      console.error('Ошибка при переключении темы:', error);
+      Alert.alert('Ошибка', 'Не удалось переключить тему.');
+      setDarkTheme(!darkTheme); 
+    }
+  };
+
+  const toggleNotifications = async () => {
+    try {
+      setPushNotifications(!pushNotifications);
+      await fetchData(
+        `/settings/notification?userID=${userID}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        }
+      );
+      Alert.alert('Успех', 'Настройки уведомлений обновлены!');
+    } catch (error) {
+      console.error('Ошибка при переключении уведомлений:', error);
+      Alert.alert('Ошибка', 'Не удалось обновить настройки уведомлений.');
+      setPushNotifications(!pushNotifications); // Возвращаем обратно в случае ошибки
+    }
+  }
+
   const handleUpdateProfile = async () => {
     try {
-      const { fullName, email, darkTheme } = user;
+      const { fullName, email} = user;
   
       if (!fullName.trim() || !email.trim()) {
-        Alert.alert('Error', 'Full Name and Email cannot be empty.');
+        Alert.alert('Ошибка', 'Имя и электронная почта не могут быть пустыми.');
         return;
       }
   
       setLoading(true);
   
-      // Explicitly define the type of the promises array
-      const promises: Promise<any>[] = [];
+      const updatePromises: Promise<void>[] = [];
   
-      // Update Full Name if changed
-      if (fullName.trim() !== user.fullName) {
-        promises.push(
-          fetchData(`update-user?userID=${userID}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-            body: JSON.stringify({ fullName: fullName.trim() }),
-          })
-        );
-      }
+      const fullNameData = JSON.stringify({ fullName: fullName.trim() });
+      console.log('Отправляемые данные для имени:', fullNameData);
+      updatePromises.push(
+        fetchData(`update-user?userID=${userID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+          body: fullNameData,
+        }).then(() => {})
+      );
+
+      const emailData = JSON.stringify({ email: email.trim() });
+      console.log('Отправляемые данные для email:', emailData);
+      updatePromises.push(
+        fetchData(`update-user?userID=${userID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+          body: emailData,
+        }).then(() => {})
+      );
   
-      // Update Email if changed
-      if (email.trim() !== user.email) {
-        promises.push(
-          fetchData(`update-user?userID=${userID}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-            body: JSON.stringify({ email: email.trim() }),
-          })
-        );
-      }
+
   
-      // Update Dark Theme if changed
-      if (darkTheme !== user.darkTheme) {
-        promises.push(
-          fetchData(`update-user?userID=${userID}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-            body: JSON.stringify({ darkTheme }),
-          })
-        );
-      }
+      await Promise.all(updatePromises);
   
-      // Wait for all promises to resolve
-      await Promise.all(promises);
-  
-      Alert.alert('Success', 'Profile updated successfully!');
+      Alert.alert('Успех', 'Профиль успешно обновлен!');
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile.');
+      console.error('Ошибка при обновлении профиля:', error);
+      Alert.alert('Ошибка', 'Не удалось обновить профиль.');
     } finally {
       setLoading(false);
     }
+    
   };
+  
+  
   
   
 
@@ -209,9 +237,9 @@ const EditProfileScreen = () => {
         <View style={styles.toggleGroup}>
           <Text style={styles.toggleLabel}>Dark Theme</Text>
           <Switch
-            value={user.darkTheme}
-            onValueChange={(value) => setUser({ ...user, darkTheme: value })}
-            thumbColor={user.darkTheme ? '#00C9A7' : '#E8E8E8'}
+            value={darkTheme}
+            onValueChange={toggleDarkTheme}
+            thumbColor={darkTheme ? '#00C9A7' : '#E8E8E8'}
             trackColor={{ false: '#E8E8E8', true: '#00C9A7' }}
           />
         </View>
@@ -221,7 +249,7 @@ const EditProfileScreen = () => {
           <Text style={styles.toggleLabel}>Notifications</Text>
           <Switch
             value={pushNotifications}
-            onValueChange={setPushNotifications}
+            onValueChange={toggleNotifications}
             thumbColor={pushNotifications ? '#00C9A7' : '#E8E8E8'}
             trackColor={{ false: '#E8E8E8', true: '#00C9A7' }}
           />
