@@ -5,19 +5,22 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { fetchData } from '../services/api';
 
 const AddExpenseScreen = () => {
-  const { categoryName } = useLocalSearchParams(); // Retrieve the category name from params
+  const { categoryName, userID } = useLocalSearchParams(); // Get category and userID from params
   const router = useRouter();
 
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [amount, setAmount] = useState('');
   const [expenseTitle, setExpenseTitle] = useState('');
+  const [transactionType, setTransactionType] = useState<'income' | 'expense' | 'goal'>('expense');
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -26,13 +29,39 @@ const AddExpenseScreen = () => {
     }
   };
 
-  const handleSave = () => {
-    console.log({
-      date: date.toDateString(),
+  const handleSave = async () => {
+    if (!amount || !expenseTitle) {
+      Alert.alert('Validation Error', 'Please enter all required fields.');
+      return;
+    }
+
+    const transactionData = {
+      description: expenseTitle,
+      date: date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
+      amount: parseFloat(amount),
       category: categoryName,
-      amount,
-      expenseTitle,
-    });
+      type: transactionType,
+    };
+
+    try {
+      const response = await fetchData(`transaction?userID=${userID}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionData),
+      });
+
+      if (response.ok) {
+        Alert.alert('Success', 'Transaction saved successfully!');
+        router.back(); // Go back to the previous screen
+      } else {
+        Alert.alert('Error', 'Failed to save transaction. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      Alert.alert('Error', 'Failed to save transaction. Please try again.');
+    }
   };
 
   return (
@@ -99,6 +128,32 @@ const AddExpenseScreen = () => {
             onChangeText={setExpenseTitle}
             placeholderTextColor="#7D7D7D"
           />
+        </View>
+
+        {/* Transaction Type */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Transaction Type</Text>
+          <View style={styles.typeContainer}>
+            {['income', 'expense', 'goal'].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.typeButton,
+                  transactionType === type && styles.selectedTypeButton,
+                ]}
+                onPress={() => setTransactionType(type as 'income' | 'expense' | 'goal')}
+              >
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    transactionType === type && styles.selectedTypeButtonText,
+                  ]}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Save Button */}
@@ -179,6 +234,29 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
     color: '#333333',
+  },
+  typeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  typeButton: {
+    flex: 1,
+    padding: 10,
+    margin: 5,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#E8FFF7',
+  },
+  selectedTypeButton: {
+    backgroundColor: '#00C9A7',
+  },
+  typeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#7D7D7D',
+  },
+  selectedTypeButtonText: {
+    color: '#FFFFFF',
   },
   saveButton: {
     backgroundColor: '#00C9A7',
