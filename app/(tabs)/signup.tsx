@@ -1,10 +1,50 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { fetchData } from '../services/api';
 
 const Signup = () => {
   const router = useRouter();
 
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleRegister = async () => {
+    if (!fullName || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      const data = {
+        fullName,
+        email,
+        password,
+        profilePicture: 'url_to_profile_picture', // Example placeholder
+        role: 'user',
+      };
+
+      // Using fetchData with appropriate endpoint and options
+      const response = await fetchData('register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      Alert.alert('Success', 'Account created successfully!');
+      router.push('/login'); // Redirect to login page
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Error', error.message || 'Unable to register. Please try again later.');
+    }
+  };
+  
   return (
     <View style={styles.container}>
       {/* Заголовок */}
@@ -12,15 +52,17 @@ const Signup = () => {
         <Text style={styles.title}>Create Account</Text>
       </View>
 
-      {/* Форма */}
+      {/* Form */}
       <ScrollView contentContainerStyle={styles.formContainer}>
         {/* Full Name */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Full Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="example@example.com"
+            placeholder="Full Name"
             placeholderTextColor="#95D9A7"
+            value={fullName}
+            onChangeText={setFullName}
           />
         </View>
 
@@ -32,27 +74,8 @@ const Signup = () => {
             placeholder="example@example.com"
             placeholderTextColor="#95D9A7"
             keyboardType="email-address"
-          />
-        </View>
-
-        {/* Mobile Number */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Mobile Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="+123 456 789"
-            placeholderTextColor="#95D9A7"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        {/* Date of Birth */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Date Of Birth</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="DD / MM / YYYY"
-            placeholderTextColor="#95D9A7"
+            value={email}
+            onChangeText={setEmail}
           />
         </View>
 
@@ -64,6 +87,8 @@ const Signup = () => {
             placeholder="Password"
             placeholderTextColor="#95D9A7"
             secureTextEntry={true}
+            value={password}
+            onChangeText={setPassword}
           />
         </View>
 
@@ -75,6 +100,8 @@ const Signup = () => {
             placeholder="Confirm Password"
             placeholderTextColor="#95D9A7"
             secureTextEntry={true}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
           />
         </View>
 
@@ -86,7 +113,7 @@ const Signup = () => {
         </Text>
 
         {/* Sign Up Button */}
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
@@ -105,12 +132,12 @@ const Signup = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#00D09E', // Фон для нижнего контейнера
+    backgroundColor: '#00D09E', 
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
   headerContainer: {
-    backgroundColor: '#fff', // Белый фон для заголовка
+    backgroundColor: '#fff', 
     paddingVertical: 80,
     justifyContent: 'center',
     alignItems: 'center',

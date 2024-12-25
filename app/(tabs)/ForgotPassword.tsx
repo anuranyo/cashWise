@@ -1,6 +1,6 @@
 // File: app/ForgotPassword.tsx
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,38 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { fetchData } from '../services/api';
 
 const ForgotPasswordScreen = () => {
+  const [email, setEmail] = useState('');
+
+  const handleNextStep = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address.');
+      return;
+    }
+  
+    try {
+      const response = await fetchData(`userByEmail?email=${email}`, {
+        method: 'GET',
+      });
+  
+      if (response && response.email === email) {
+        router.push({
+          pathname: '/NewPassword',
+          params: { email, userID: response.userID },
+        });
+      } else {
+        Alert.alert('Error', 'No user found with this email address.');
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+      Alert.alert('Error', 'Unable to check user. Please try again.');
+    }
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -19,8 +48,7 @@ const ForgotPasswordScreen = () => {
       <View style={styles.content}>
         <Text style={styles.title}>Reset Password?</Text>
         <Text style={styles.description}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Enter your email address to reset your password.
         </Text>
         <Text style={styles.label}>Enter Email Address</Text>
         <TextInput
@@ -28,11 +56,12 @@ const ForgotPasswordScreen = () => {
           placeholder="example@example.com"
           placeholderTextColor="#b0b0b0"
           keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
         />
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/SecurityPin')} >
-        <Text style={styles.buttonText}>Next Step</Text>
+        <TouchableOpacity style={styles.button} onPress={handleNextStep}>
+          <Text style={styles.buttonText}>Next Step</Text>
         </TouchableOpacity>
-
       </View>
     </SafeAreaView>
   );
