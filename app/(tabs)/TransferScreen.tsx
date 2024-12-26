@@ -26,6 +26,9 @@ const TransferScreen = () => {
   const [filteredTransactions, setFilteredTransactions] = useState<{ month: string; transactions: Transaction[] }[]>([]);
   const [selectedTab, setSelectedTab] = useState<'income' | 'expense' | 'all'>('all'); // Tracks the selected tab
   const { userID } = useLocalSearchParams(); // Getting userID from parameters
+  
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -84,7 +87,7 @@ const TransferScreen = () => {
   }, [userID]);
 
   // Function to handle tab selection and toggle filtering
-  const handleTabPress = (tab: 'income' | 'expense') => {
+  const handleTabPress = async (tab: 'income' | 'expense') => {
     if (selectedTab === tab) {
       // Remove filter if the same tab is clicked again
       setSelectedTab('all');
@@ -98,7 +101,39 @@ const TransferScreen = () => {
       })).filter((section) => section.transactions.length > 0); // Remove empty months
       setFilteredTransactions(filtered);
     }
+
+      // Fetch total income
+      const incomeResponse = await fetchData(`transaction/getTotalIncome?userID=${userID}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+
+      if (incomeResponse?.totalIncome) {
+        setTotalIncome(incomeResponse.totalIncome);
+      } else {
+        console.error('Invalid total income response:', incomeResponse);
+      }
+
+      // Fetch total expense
+      const expenseResponse = await fetchData(`transaction/getTotalExpense?userID=${userID}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+
+      if (expenseResponse?.totalExpense) {
+        setTotalExpense(expenseResponse.totalExpense);
+      } else {
+        console.error('Invalid total expense response:', expenseResponse);
+      }
   };
+
+  const totalBalance = totalIncome - totalExpense;
 
   return (
     <View style={{ flex: 1 }}>
@@ -111,7 +146,7 @@ const TransferScreen = () => {
         {/* Balance Section */}
         <View style={styles.balanceCard}>
           <Text style={styles.cardTitle}>Total Balance</Text>
-          <Text style={styles.cardAmount}>$7,783.00</Text>
+          <Text style={styles.cardAmount}>${totalBalance.toFixed(2)}</Text>
         </View>
 
         {/* Toggle Tabs */}
@@ -125,7 +160,7 @@ const TransferScreen = () => {
           >
             <FontAwesome5 name="arrow-up" size={24} color="#00D699" />
             <Text style={styles.balanceSummaryTitle}>Income</Text>
-            <Text style={styles.balanceSummaryAmount}>$4,120.00</Text>
+            <Text style={styles.balanceSummaryAmount}>${totalIncome.toFixed(2)}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -136,7 +171,7 @@ const TransferScreen = () => {
           >
             <FontAwesome5 name="arrow-down" size={24} color="#1A73E8" />
             <Text style={styles.balanceSummaryTitle}>Expense</Text>
-            <Text style={styles.balanceSummaryAmountExpense}>$1,187.40</Text>
+            <Text style={styles.balanceSummaryAmountExpense}>${totalExpense.toFixed(2)}</Text>
           </TouchableOpacity>
         </View>
 

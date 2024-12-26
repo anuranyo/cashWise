@@ -8,11 +8,12 @@ import {
   TextInput,
 } from 'react-native';
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 const SecurityScreen = () => {
   const router = useRouter();
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
+  const { userID } = useLocalSearchParams();
 
   const toggleExpand = (optionId: string) => {
     setExpandedOption((prev) => (prev === optionId ? null : optionId));
@@ -23,11 +24,11 @@ const SecurityScreen = () => {
       <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: "#E6FFF5" }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push("/ProfileScreen")}>
+          <TouchableOpacity onPress={() => router.push({ pathname: './ProfileScreen', params: { userID } })}>
             <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Security</Text>
-          <TouchableOpacity onPress={() => router.push("/NotificationScreen")}>
+          <TouchableOpacity onPress={() => router.push({ pathname: "/NotificationScreen", params: { userID } })}>
             <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -36,57 +37,11 @@ const SecurityScreen = () => {
         <View style={styles.securityContainer}>
           <Text style={styles.sectionTitle}>Security</Text>
 
-          {/* Change Pin Option */}
-          <View>
-            <TouchableOpacity
-              style={styles.optionItem}
-              onPress={() => toggleExpand("changePin")}
-            >
-              <Text style={styles.optionText}>Change Pin</Text>
-              <FontAwesome5
-                name={expandedOption === "changePin" ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#7D7D7D"
-              />
-            </TouchableOpacity>
-            {expandedOption === "changePin" && (
-              <View style={styles.expandedContent}>
-                <Text style={styles.descriptionText}>
-                  Securely change your PIN.
-                </Text>
-                <TextInput
-                  placeholder="Current PIN"
-                  secureTextEntry
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder="New PIN"
-                  secureTextEntry
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder="Confirm New PIN"
-                  secureTextEntry
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => alert("PIN Changed")}
-                >
-                  <Text style={styles.actionButtonText}>Change PIN</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
           {/* Change Password Option */}
           <View>
             <TouchableOpacity
               style={styles.optionItem}
-              onPress={() => toggleExpand("changePassword")}
+              onPress={() =>router.push("/ForgotPassword")}
             >
               <Text style={styles.optionText}>Change Password</Text>
               <FontAwesome5

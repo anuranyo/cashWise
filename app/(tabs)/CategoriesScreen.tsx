@@ -81,10 +81,10 @@ const CategoriesScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
-          <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
+          
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Categories</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push({ pathname: "/NotificationScreen", params: { userID } })}>
           <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
