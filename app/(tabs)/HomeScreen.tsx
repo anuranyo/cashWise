@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { fetchData } from '../services/api';
 import BottomNavigation from '../components/SavingsProgress/BottomNavigation';
 import SavingsProgress from '../components/SavingsProgress/SavingsProgress';
@@ -41,7 +41,12 @@ const HomeScreen = () => {
   const [activeTab, setActiveTab] = useState<'day' | 'week' | 'month'>('day');
   const today = new Date().toISOString().split('T')[0];
 
-
+  const handleNotification = () => {
+    router.push({
+      pathname: `/NotificationScreen`,
+      params: { userID: userID },
+    });
+  };
 
   useEffect(() => {
     const fetchServerData = async () => {
@@ -106,7 +111,6 @@ const HomeScreen = () => {
               } catch (error) {
                 console.error(`Failed to fetch category for transactionID ${t.transactionID}:`, error);
               }
-
 
               // Return formatted transaction
               return {
@@ -310,7 +314,7 @@ const HomeScreen = () => {
             </Text>
             <Text style={styles.subText}>Good Morning</Text>
           </View>
-          <TouchableOpacity onPress={() => console.log('Notification Clicked')}>
+          <TouchableOpacity onPress={handleNotification}>
             <FontAwesome5 name="bell" size={24} color="#fff" />
           </TouchableOpacity>
         </View>

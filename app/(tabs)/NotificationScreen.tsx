@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 type Notification = {
   id: string;
@@ -88,11 +88,20 @@ const notificationsData: Array<{ section: string; data: Notification[] }> = [
 ];
 
 const NotificationScreen = () => {
+  const { userID } = useLocalSearchParams();
+   
+  const handleNotification = () => {
+    router.push({
+      pathname: `/HomeScreen`,
+      params: { userID: userID },
+    });
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/HomeScreen')}>
+        <TouchableOpacity onPress={handleNotification}>
           <FontAwesome5 name="arrow-left" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notification</Text>

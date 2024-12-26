@@ -14,13 +14,12 @@ import { useTabContext } from '../contexts/TabContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchData } from '../services/api';
 
-// Define the type for the category
 type Category = {
   categoryID: number;
   userID: number;
   name: string;
   description: string;
-  icon: string; // Add the icon property
+  icon: string;
 };
 
 const CategoriesScreen = () => {
@@ -29,6 +28,13 @@ const CategoriesScreen = () => {
   const [userID, setUserID] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleNotification = () => {
+      router.push({
+        pathname: `/NotificationScreen`,
+        params: { userID: userID },
+      });
+    };
 
   useEffect(() => {
     const fetchUserID = async () => {
@@ -43,7 +49,7 @@ const CategoriesScreen = () => {
       const fetchCategories = async () => {
         try {
           const response = await fetchData(`/categories?userID=${userID}`);
-          setCategories(response); // Directly set categories from the response
+          setCategories(response); 
         } catch (error) {
           console.error('Error fetching categories:', error);
         } finally {
@@ -84,7 +90,7 @@ const CategoriesScreen = () => {
           
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Categories</Text>
-        <TouchableOpacity onPress={() => router.push({ pathname: "/NotificationScreen", params: { userID } })}>
+        <TouchableOpacity onPress={handleNotification}>
           <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -102,7 +108,7 @@ const CategoriesScreen = () => {
           >
             <View style={styles.categoryIcon}>
               <FontAwesome5
-                name={item.icon || 'question-circle'} // Dynamically use the icon from the database
+                name={item.icon || 'question-circle'} 
                 size={24}
                 color="#FFFFFF"
               />

@@ -34,6 +34,13 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const parsedUserID = Array.isArray(userID) ? userID[0] : userID; 
 
+  const handleNotification = () => {
+    router.push({
+      pathname: `/NotificationScreen`,
+      params: { userID: userID },
+    });
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -110,7 +117,7 @@ const ProfileScreen = () => {
           {/* Add a back button here if necessary */}
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity onPress={() => router.push('./NotificationScreen')}>
+        <TouchableOpacity onPress={handleNotification}>
           <FontAwesome5 name="bell" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
